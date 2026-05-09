@@ -1,7 +1,10 @@
+import dotenv from "dotenv";
 import postgres from "postgres";
 import { drizzle } from "drizzle-orm/postgres-js";
 import { profiles } from "./schema";
 import { createClient } from "@supabase/supabase-js";
+
+dotenv.config({ path: ".env.local" });
 
 const PLATFORM_ADMIN_EMAIL = "admin@sunset.dev";
 const PLATFORM_ADMIN_PASSWORD = "admin123";
