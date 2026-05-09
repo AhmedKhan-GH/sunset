@@ -19,3 +19,9 @@ https://pmc.ncbi.nlm.nih.gov/articles/PMC12181036/
 - Human-Computer Interaction for Older Adults - a Literature
 Review on Technology Acceptance of eHealth Systems
 https://www.diva-portal.org/smash/get/diva2:1653940/FULLTEXT01.pdf
+
+- Digital Ecosystems 5.0 for elderly people
+https://medcraveonline.com/MOJGG/digital-ecosystems-50-for-elderly-people.html
+
+- Example healthcare provider app
+https://hci-software.com/en/zorgverlener-app/
