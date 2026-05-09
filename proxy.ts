@@ -25,8 +25,23 @@ export async function proxy(request: NextRequest) {
     },
   );
 
-  // Refreshes the auth token
-  await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const isProtected = request.nextUrl.pathname.startsWith("/admin");
+
+  if (isProtected && !user) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/";
+    return NextResponse.redirect(url);
+  }
+
+  if (request.nextUrl.pathname === "/" && user) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/admin";
+    return NextResponse.redirect(url);
+  }
 
   return supabaseResponse;
 }
