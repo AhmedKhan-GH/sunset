@@ -29,7 +29,37 @@ AI-powered hospice care platform.
    ```bash
    npm run dev
    ```
-7. Open [http://localhost:3000](http://localhost:3000) and sign in with `admin@sunset.dev` / `admin123`
+7. Open [http://localhost:3000](http://localhost:3000) and sign in with one of the seed accounts below.
+
+## Seed Accounts
+
+All seed accounts use the password `admin123`.
+
+| Email | Role | Org |
+|---|---|---|
+| `admin@sunset.dev` | platform_admin | — |
+| `org-admin@sunset.dev` | org_admin | Sunrise Hospice |
+| `practitioner@sunset.dev` | practitioner | Sunrise Hospice |
+
+The seed also creates a sample patient (John Doe) and relative (Jane Doe, spouse) under Sunrise Hospice.
+
+## Role Hierarchy
+
+Access is enforced top-down via Postgres RLS policies:
+
+```
+platform_admin
+└── org_admin          (scoped to one organization)
+    └── practitioner   (scoped to one organization)
+        └── patients   (created by practitioners)
+            └── relatives
+```
+
+| Role | Permissions |
+|---|---|
+| `platform_admin` | Full access to everything |
+| `org_admin` | Manage practitioners, patients, and relatives within their org |
+| `practitioner` | Manage patients and relatives within their org |
 
 ## Database Workflow
 
