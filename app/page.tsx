@@ -28,7 +28,14 @@ export default function LoginPage() {
       return;
     }
 
-    router.push("/admin");
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .single();
+
+    if (profile?.role === "platform_admin") router.push("/admin");
+    else if (profile?.role === "org_admin") router.push("/org");
+    else router.push("/org/patients");
   }
 
   return (
