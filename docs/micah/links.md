@@ -25,3 +25,12 @@ https://medcraveonline.com/MOJGG/digital-ecosystems-50-for-elderly-people.html
 
 - Example healthcare provider app
 https://hci-software.com/en/zorgverlener-app/
+
+- Best practices for healthcare applications
+https://www.eleken.co/blog-posts/user-interface-design-for-healthcare-applications#3-vcdoctor
+
+- Top 5 colors for healthcare app design
+https://virtualspirit.me/insights/293/top-5-colours-for-healthcare-app-design-based-on-colour-psychology
+
+- Color palettes for mental healthcare UI
+https://fuzzymath.com/blog/the-color-palettes-of-mental-healthcare-ui/
