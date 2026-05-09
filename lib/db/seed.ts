@@ -1,65 +1,111 @@
 import dotenv from "dotenv";
 import postgres from "postgres";
 import { drizzle } from "drizzle-orm/postgres-js";
-import { profiles } from "./schema";
+import { profiles, organizations, patients, relatives } from "./schema";
 import { createClient } from "@supabase/supabase-js";
 
 dotenv.config({ path: ".env.local" });
 
-const PLATFORM_ADMIN_EMAIL = "admin@sunset.dev";
-const PLATFORM_ADMIN_PASSWORD = "admin123";
-
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL || "http://127.0.0.1:54321",
-  process.env.SUPABASE_SERVICE_ROLE_KEY || getServiceRoleKey(),
+  process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    (() => {
+      throw new Error("SUPABASE_SERVICE_ROLE_KEY required. Run: npx supabase status");
+    })(),
   { auth: { autoRefreshToken: false, persistSession: false } },
 );
 
-function getServiceRoleKey(): string {
-  throw new Error(
-    "SUPABASE_SERVICE_ROLE_KEY is required. Run: npx supabase status to find it.",
-  );
-}
+const client = postgres(
+  process.env.DATABASE_URL || "postgresql://postgres:postgres@127.0.0.1:54322/postgres",
+);
+const db = drizzle(client);
 
-async function seed() {
+async function getOrCreateAuthUser(email: string, password: string): Promise<string> {
   const { data, error } = await supabase.auth.admin.createUser({
-    email: PLATFORM_ADMIN_EMAIL,
-    password: PLATFORM_ADMIN_PASSWORD,
+    email,
+    password,
     email_confirm: true,
   });
 
   if (error) {
     if (error.message.includes("already been registered")) {
-      console.log(`Auth user ${PLATFORM_ADMIN_EMAIL} already exists, skipping`);
       const { data: list } = await supabase.auth.admin.listUsers();
-      const existing = list?.users.find(
-        (u) => u.email === PLATFORM_ADMIN_EMAIL,
-      );
-      if (!existing) throw new Error("Could not find existing admin user");
-      await insertProfile(existing.id);
-      return;
+      const existing = list?.users.find((u) => u.email === email);
+      if (!existing) throw new Error(`Could not find existing user: ${email}`);
+      console.log(`  auth user exists: ${email} (${existing.id})`);
+      return existing.id;
     }
     throw error;
   }
 
-  console.log(`Created auth user: ${data.user.email} (${data.user.id})`);
-  await insertProfile(data.user.id);
+  console.log(`  created auth user: ${email} (${data.user.id})`);
+  return data.user.id;
 }
 
-async function insertProfile(userId: string) {
-  const client = postgres(
-    process.env.DATABASE_URL ||
-      "postgresql://postgres:postgres@127.0.0.1:54322/postgres",
-  );
-  const db = drizzle(client);
-
+async function seed() {
+  // 1. Platform admin
+  console.log("\n[1/5] platform admin");
+  const platformAdminId = await getOrCreateAuthUser("admin@sunset.dev", "admin123");
   await db
     .insert(profiles)
-    .values({ userId, role: "platform_admin" })
+    .values({ userId: platformAdminId, role: "platform_admin" })
     .onConflictDoNothing();
 
-  console.log(`Seeded platform_admin profile for ${userId}`);
+  // 2. Organization
+  console.log("\n[2/5] organization");
+  let [org] = await db
+    .insert(organizations)
+    .values({ name: "Sunrise Hospice" })
+    .onConflictDoNothing()
+    .returning();
+
+  if (!org) {
+    [org] = await db.select().from(organizations).limit(1);
+    console.log(`  org exists: ${org.name} (${org.id})`);
+  } else {
+    console.log(`  created org: ${org.name} (${org.id})`);
+  }
+
+  // 3. Org admin
+  console.log("\n[3/5] org admin");
+  const orgAdminId = await getOrCreateAuthUser("org-admin@sunset.dev", "admin123");
+  await db
+    .insert(profiles)
+    .values({ userId: orgAdminId, role: "org_admin", orgId: org.id })
+    .onConflictDoNothing();
+
+  // 4. Practitioner
+  console.log("\n[4/5] practitioner");
+  const practitionerId = await getOrCreateAuthUser("practitioner@sunset.dev", "admin123");
+  await db
+    .insert(profiles)
+    .values({ userId: practitionerId, role: "practitioner", orgId: org.id })
+    .onConflictDoNothing();
+
+  // 5. Patient + relative
+  console.log("\n[5/5] patient + relative");
+  const [patient] = await db
+    .insert(patients)
+    .values({
+      orgId: org.id,
+      practitionerId,
+      name: "John Doe",
+      dateOfBirth: "1940-03-15",
+      gender: "male",
+    })
+    .returning();
+
+  console.log(`  created patient: ${patient.name} (${patient.id})`);
+
+  const [relative] = await db
+    .insert(relatives)
+    .values({ patientId: patient.id, name: "Jane Doe", relationship: "spouse" })
+    .returning();
+
+  console.log(`  created relative: ${relative.name} (${relative.relationship})`);
+
   await client.end();
+  console.log("\n✓ seed complete");
 }
 
 seed().catch((err) => {
