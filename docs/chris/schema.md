@@ -17,7 +17,7 @@ create table doctors (
   id         uuid primary key default gen_random_uuid(),
   name       text not null,
   license_id text not null unique,
-  created_at timestamptz not null default now()
+  created_at bigint not null default extract(epoch from now())::bigint
 );
 ```
 
@@ -30,7 +30,7 @@ create table patients (
   date_of_birth date not null,
   sex           text not null check (sex in ('male', 'female', 'other')),
   doctor_id     uuid references doctors(id) on delete set null,
-  created_at    timestamptz not null default now()
+  created_at    bigint not null default extract(epoch from now())::bigint
 );
 ```
 
@@ -45,7 +45,7 @@ create table notes (
   doctor_id  uuid references doctors(id) on delete set null,
   content    text not null,
   embedding  vector(768),
-  created_at timestamptz not null default now()
+  created_at bigint not null default extract(epoch from now())::bigint
 );
 
 create index on notes using ivfflat (embedding vector_cosine_ops)
