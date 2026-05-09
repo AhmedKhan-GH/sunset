@@ -1,6 +1,6 @@
 # MCP + gpt-oss:20b Setup — Sunset
 
-How we connect the LLM (`gpt-oss:20b` on Ollama) to our tools (Supabase queries) via MCP.
+How we connect the LLM (`gpt-oss:20b` on Ollama) to our tools (Supabase queries) using **the official MCP integration** (`@modelcontextprotocol/sdk`).
 
 ---
 
@@ -8,22 +8,17 @@ How we connect the LLM (`gpt-oss:20b` on Ollama) to our tools (Supabase queries)
 
 ```
 ┌──────────────────────────────┐         ┌──────────────────────────────┐
-│ Remote machine                │         │ Local dev laptop / Vercel    │
-│ - Ollama @ :11434             │◀───────▶│ - Next.js app (Option B)     │
-│ - gpt-oss:20b loaded          │  HTTP   │ - mcphost CLI (Option A)     │
+│ Remote machine                │         │ Local dev / Vercel           │
+│ - Ollama @ :11434             │◀───────▶│ - Next.js app (the host)     │
+│ - gpt-oss:20b loaded          │  HTTP   │ - MCP Inspector (debug only) │
 │ - Sunset MCP server @ :3030   │         │                              │
 └──────────────────────────────┘         └──────────────────────────────┘
 ```
 
-**Two ways to use this stack:**
-
-| | Option A — `mcphost` CLI | Option B — Next.js embedded |
+| Tool | Purpose | When you use it |
 |---|---|---|
-| Purpose | Iterate on prompts/tools, smoke-test the model | The actual web app users hit |
-| Who runs it | Devs on their laptop | Server-side Next.js (Server Actions / Route Handlers) |
-| When to use | Before/during building features | What gets shipped |
-
-You need **both**. A is for development. B is for production.
+| **Next.js + `@modelcontextprotocol/sdk`** | The actual app. Server-side host that connects gpt-oss:20b ↔ MCP server. | Always. This is what gets shipped. |
+| **MCP Inspector** | Official debugging UI. Lists tools, calls them by hand, shows raw responses. No LLM. | When the MCP server is misbehaving and you need to isolate "is the server broken?" from "is the model confused?" |
 
 ---
 
@@ -41,61 +36,14 @@ Smoke-test before anything else:
 
 ```bash
 curl -s "$OLLAMA_URL/api/tags" | jq '.models[].name'   # should list gpt-oss:20b
-curl -s "$MCP_SUPABASE_URL"                            # should return MCP handshake or 401 if auth required
+curl -s "$MCP_SUPABASE_URL"                            # MCP handshake or 401 if auth required
 ```
 
-If either fails, stop here and fix the network before continuing.
+If either fails, fix the network before continuing.
 
 ---
 
-## Option A — `mcphost` CLI (dev workflow)
-
-### Install
-
-```bash
-# Requires Go ≥ 1.22
-go install github.com/mark3labs/mcphost@latest
-# or grab a prebuilt release from the GitHub releases page
-```
-
-### Configure
-
-Create `~/.config/mcphost/config.json` (or pass `--config <path>`):
-
-```json
-{
-  "mcpServers": {
-    "sunset-supabase": {
-      "type": "streamable-http",
-      "url": "https://mcp.your-host/mcp",
-      "headers": {
-        "Authorization": "Bearer ${MCP_SUPABASE_TOKEN}"
-      }
-    }
-  }
-}
-```
-
-### Run
-
-```bash
-export OLLAMA_HOST="$OLLAMA_URL"
-export MCP_SUPABASE_TOKEN=...
-
-mcphost --model ollama:gpt-oss:20b
-```
-
-You get a chat REPL. Type a question, the model uses the tools the MCP server exposes. Use this to:
-
-- Verify tools are reachable
-- Iterate on system prompts
-- Sanity-check the model's tool choices before wiring into the app
-
----
-
-## Option B — Embedded MCP client in Next.js
-
-This is what the app actually uses.
+## The integration (Next.js + official SDK)
 
 ### Install
 
@@ -103,9 +51,7 @@ This is what the app actually uses.
 npm i @modelcontextprotocol/sdk ollama
 ```
 
-### Env vars
-
-In `.env.local`:
+### Env vars (`.env.local`)
 
 ```
 OLLAMA_URL=...
@@ -113,9 +59,7 @@ MCP_SUPABASE_URL=...
 MCP_SUPABASE_TOKEN=...
 ```
 
-### Wire it up
-
-`lib/llm/mcp-host.ts`:
+### `lib/llm/mcp-host.ts`
 
 ```ts
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
@@ -206,15 +150,39 @@ export async function summarizePatient(patientId: string, question: string) {
 
 ---
 
-## Gotchas (read before debugging)
+## Debugging with MCP Inspector
+
+Use this when the model's answers seem wrong and you want to confirm the MCP server itself is returning correct data.
+
+```bash
+npx @modelcontextprotocol/inspector
+```
+
+Opens a browser UI. Configure the connection:
+
+- **Transport:** `Streamable HTTP`
+- **URL:** the value of `MCP_SUPABASE_URL`
+- **Headers:** `Authorization: Bearer <MCP_SUPABASE_TOKEN>`
+
+Then you can:
+
+- Click **List Tools** → confirm every tool is registered with the schema you expect
+- Click any tool → fill in arguments → **Call Tool** → see exactly what JSON the server returns
+- Inspect resources, prompts, logs, and notifications the server sends
+
+The Inspector talks to the MCP server only — it never calls the LLM. If a query returns garbage in Inspector, the bug is in the MCP server. If it returns clean data in Inspector but `askLlm` produces a bad answer, the bug is in your prompt or in how the model interprets results.
+
+---
+
+## Gotchas
 
 - **Ollama runs single-request-per-model by default.** Set `OLLAMA_NUM_PARALLEL=2` on the server if multiple devs hit it at once.
-- **First request loads the model into VRAM** (10-30 sec). Warm it before the demo by sending one dummy chat.
+- **First request loads the model into VRAM** (10-30 sec). Warm it before the demo.
 - **`gpt-oss:20b` emits a hidden `thinking` channel.** Ignore unless debugging — never show it to clinicians.
-- **MCP client is stateful.** Cache the client + tool list across requests (don't reconnect every call). The example above does this with module-level `client`.
-- **Vercel can't reach `localhost`.** When deployed, `OLLAMA_URL` and `MCP_SUPABASE_URL` must be public-reachable URLs (not LAN IPs).
+- **MCP client is stateful.** Cache the client + tool list across requests (the example uses module-level `client`); reconnecting per request will tank performance.
+- **Vercel can't reach `localhost`.** When deployed, `OLLAMA_URL` and `MCP_SUPABASE_URL` must be public-reachable.
 - **CORS doesn't apply** — both calls happen server-side from Next.js, never browser → MCP/Ollama directly.
-- **Auth tokens are server-only secrets.** Never put `MCP_SUPABASE_TOKEN` or service-role keys in `NEXT_PUBLIC_*` env vars.
+- **Auth tokens are server-only.** Never put `MCP_SUPABASE_TOKEN` in `NEXT_PUBLIC_*` vars.
 - **Tool-loop runaway:** the 6-iteration cap above prevents the model from infinitely calling tools. Tune as needed.
 
 ---
@@ -223,20 +191,22 @@ export async function summarizePatient(patientId: string, question: string) {
 
 - [ ] `curl $OLLAMA_URL/api/tags` lists `gpt-oss:20b`
 - [ ] `curl $MCP_SUPABASE_URL` returns a valid response
-- [ ] `mcphost --model ollama:gpt-oss:20b` opens a REPL and lists tools on `/tools`
-- [ ] A test question in the REPL produces a tool call + final answer
-- [ ] Calling `askLlm()` from a Next.js Server Action returns a string
-- [ ] Demo machine has been warmed (one dummy request fired) before the live demo
+- [ ] **Inspector** lists every expected tool with the right schema
+- [ ] **Inspector** call to one tool returns the expected rows
+- [ ] `askLlm()` from a Next.js Server Action returns a string
+- [ ] Demo machine warmed (one dummy request fired) before the live demo
 
 ---
 
 ## When something breaks
 
-| Symptom | Likely cause |
+| Symptom | Where to look |
 |---|---|
 | `connection refused` to Ollama | Remote box down, or `OLLAMA_HOST` not bound to `0.0.0.0:11434` |
 | `401` from MCP | Missing/wrong `MCP_SUPABASE_TOKEN` |
-| Model returns text but never calls tools | Tools not passed correctly, or schema invalid (check `cachedTools`) |
-| Model hallucinates a tool name | Bad system prompt — explicitly list available tools in the prompt |
+| Inspector shows wrong/empty data | MCP server bug — fix there, not in the host |
+| Inspector data is fine, model still answers wrong | Prompt or context issue, not MCP |
+| Model returns text but never calls tools | Tools not passed to Ollama, or schema invalid (log `cachedTools`) |
+| Model hallucinates a tool name | System prompt doesn't list available tools clearly enough |
 | Long delays on first request | Cold model load — warm before demo |
 | `gpt-oss:20b` not found | `ollama pull gpt-oss:20b` hasn't been run on the remote box |
