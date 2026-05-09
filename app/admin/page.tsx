@@ -5,7 +5,7 @@ export default async function AdminPage() {
 
   return (
     <div className="mx-auto w-full max-w-2xl p-8">
-      <h1 className="text-2xl font-semibold">Platform Admin</h1>
+      <h1 className="text-2xl font-semibold">Organizations</h1>
 
       <form action={createOrganization} className="mt-6 flex gap-2">
         <input
@@ -19,7 +19,7 @@ export default async function AdminPage() {
           type="submit"
           className="rounded bg-black px-4 py-2 text-white dark:bg-white dark:text-black"
         >
-          Create
+          Add organization
         </button>
       </form>
 
