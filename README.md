@@ -21,7 +21,7 @@ AI-powered hospice care platform.
    ```
 5. Run database migrations:
    ```bash
-   DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres npx drizzle-kit migrate
+   npx drizzle-kit migrate
    ```
 6. Seed the platform admin (get the Secret key from `npx supabase status`):
    ```bash
@@ -40,11 +40,11 @@ Schema is defined in `lib/db/schema.ts` using Drizzle ORM. To make changes:
 1. Edit `lib/db/schema.ts`
 2. Generate a migration:
    ```bash
-   DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres npx drizzle-kit generate
+   npx drizzle-kit generate
    ```
 3. Apply the migration:
    ```bash
-   DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres npx drizzle-kit migrate
+   npx drizzle-kit migrate
    ```
 
 Migration files are committed to `./drizzle/` and applied in order.
