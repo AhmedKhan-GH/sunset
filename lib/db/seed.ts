@@ -82,27 +82,42 @@ async function seed() {
     .values({ userId: practitionerId, role: "practitioner", orgId: org.id })
     .onConflictDoNothing();
 
-  // 5. Patient + relative
-  console.log("\n[5/5] patient + relative");
-  const [patient] = await db
+  // 5. Patient
+  console.log("\n[5/6] patient");
+  const patientUserId = await getOrCreateAuthUser("patient@sunset.dev", "admin123");
+  let [patient] = await db
     .insert(patients)
     .values({
       orgId: org.id,
       practitionerId,
+      userId: patientUserId,
       name: "John Doe",
       dateOfBirth: "1940-03-15",
       gender: "male",
     })
+    .onConflictDoNothing()
     .returning();
 
-  console.log(`  created patient: ${patient.name} (${patient.id})`);
+  if (!patient) {
+    [patient] = await db.select().from(patients).limit(1);
+    console.log(`  patient exists: ${patient.name} (${patient.id})`);
+  } else {
+    console.log(`  created patient: ${patient.name} (${patient.id})`);
+  }
 
+  // 6. Relative
+  console.log("\n[6/6] relative");
   const [relative] = await db
     .insert(relatives)
     .values({ patientId: patient.id, name: "Jane Doe", relationship: "spouse" })
+    .onConflictDoNothing()
     .returning();
 
-  console.log(`  created relative: ${relative.name} (${relative.relationship})`);
+  if (relative) {
+    console.log(`  created relative: ${relative.name} (${relative.relationship})`);
+  } else {
+    console.log("  relative already exists, skipping");
+  }
 
   await client.end();
   console.log("\n✓ seed complete");

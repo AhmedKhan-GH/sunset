@@ -77,6 +77,7 @@ export const patients = pgTable(
     practitionerId: uuid("practitioner_id").references(() => profiles.userId, {
       onDelete: "set null",
     }),
+    userId: uuid("user_id").unique(), // auth user for patient portal login
     name: text("name").notNull(),
     dateOfBirth: date("date_of_birth").notNull(),
     gender: text("gender").notNull(), // male | female | other | unknown
@@ -106,6 +107,11 @@ export const patients = pgTable(
       using: sql`${callerRole} = 'practitioner' AND ${table.orgId} = ${callerOrgId}`,
       withCheck: sql`${callerRole} = 'practitioner' AND ${table.orgId} = ${callerOrgId}`,
     }),
+    pgPolicy("patient can read own record", {
+      for: "select",
+      to: authenticatedRole,
+      using: sql`${table.userId} = auth.uid()`,
+    }),
   ],
 ).enableRLS();
 
@@ -128,6 +134,18 @@ export const relatives = pgTable(
       to: authenticatedRole,
       using: isPlatformAdmin,
       withCheck: isPlatformAdmin,
+    }),
+    pgPolicy("patient can manage own relatives", {
+      for: "all",
+      to: authenticatedRole,
+      using: sql`EXISTS (
+        SELECT 1 FROM patients p
+        WHERE p.id = ${table.patientId} AND p.user_id = auth.uid()
+      )`,
+      withCheck: sql`EXISTS (
+        SELECT 1 FROM patients p
+        WHERE p.id = ${table.patientId} AND p.user_id = auth.uid()
+      )`,
     }),
     pgPolicy("org members can manage relatives of org patients", {
       for: "all",

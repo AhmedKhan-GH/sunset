@@ -15,6 +15,13 @@
       "when": 1778367822835,
       "tag": "0001_lazy_sharon_ventura",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1778372028655,
+      "tag": "0002_cooing_tarantula",
+      "breakpoints": true
     }
   ]
 }
