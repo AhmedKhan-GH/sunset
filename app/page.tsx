@@ -37,12 +37,20 @@ export default function LoginPage() {
     else if (profile?.role === "org_admin") router.push("/org");
     else if (profile?.role === "practitioner") router.push("/org/patients");
     else {
-      // No profile row — check if they're a patient
+      // No profile row — check if they're a patient or a relative
       const { data: patient } = await supabase
         .from("patients")
         .select("id")
         .single();
-      if (patient) router.push("/patient");
+      if (patient) {
+        router.push("/patient");
+        return;
+      }
+      const { data: relative } = await supabase
+        .from("relatives")
+        .select("id")
+        .single();
+      if (relative) router.push("/relative");
       else setError("No account found for this user.");
     }
   }
