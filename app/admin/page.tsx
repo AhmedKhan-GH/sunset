@@ -5,7 +5,7 @@ export default async function AdminPage() {
 
   return (
     <div className="mx-auto w-full max-w-2xl p-8">
-      <h1 className="text-2xl font-semibold">Platform Admin</h1>
+      <h1 className="text-2xl font-semibold text-foreground">Platform Admin</h1>
 
       <form action={createOrganization} className="mt-6 flex gap-2">
         <input
@@ -13,11 +13,11 @@ export default async function AdminPage() {
           type="text"
           placeholder="Organization name"
           required
-          className="flex-1 rounded border px-3 py-2"
+          className="flex-1 rounded border border-border bg-surface px-3 py-2 text-foreground placeholder:text-muted-foreground focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand-soft"
         />
         <button
           type="submit"
-          className="rounded bg-black px-4 py-2 text-white dark:bg-white dark:text-black"
+          className="rounded bg-brand px-4 py-2 font-medium text-white transition-colors hover:bg-brand-soft"
         >
           Create
         </button>
@@ -27,16 +27,16 @@ export default async function AdminPage() {
         {orgs.map((org) => (
           <li
             key={org.id}
-            className="flex items-center justify-between rounded border px-4 py-3"
+            className="flex items-center justify-between rounded border border-border bg-surface px-4 py-3"
           >
-            <span className="font-medium">{org.name}</span>
-            <span className="text-xs text-zinc-400">
+            <span className="font-medium text-foreground">{org.name}</span>
+            <span className="text-xs text-muted-foreground">
               {new Date(org.createdAt * 1000).toLocaleDateString()}
             </span>
           </li>
         ))}
         {orgs.length === 0 && (
-          <li className="text-sm text-zinc-400">No organizations yet.</li>
+          <li className="text-sm text-muted-foreground">No organizations yet.</li>
         )}
       </ul>
     </div>
