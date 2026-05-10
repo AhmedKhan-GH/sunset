@@ -11,13 +11,20 @@ colorSchema: light
 ---
 
 <div class="absolute inset-0 overflow-hidden pointer-events-none">
-  <div class="absolute left-1/2 w-[480px] h-[480px] rounded-full" style="top: 100%; transform: translate(-50%, -55%); background: linear-gradient(135deg, #fbbf24 0%, #f472b6 55%, #a78bfa 100%); opacity: 0.85;" />
+  <div class="absolute left-1/2 w-[480px] h-[480px] rounded-full" style="top: 100%; transform: translate(-50%, -55%); background: linear-gradient(135deg, #fbbf24 0%, #f472b6 55%, #a78bfa 100%); opacity: 0.85; box-shadow: 0 0 10px 6px rgba(255,255,255,1), 0 0 50px 30px rgba(255,255,255,0.75), 0 0 140px 70px rgba(255,255,255,0.45);" />
   <div class="absolute -top-32 -right-32 w-[520px] h-[520px] rounded-full opacity-25 blur-3xl" style="background: radial-gradient(circle, #fbbf24 0%, #f472b6 50%, transparent 80%);" />
   <div class="absolute -bottom-32 -left-32 w-[420px] h-[420px] rounded-full opacity-20 blur-3xl" style="background: radial-gradient(circle, #a78bfa 0%, transparent 70%);" />
-  <svg class="absolute bottom-0 left-0 w-full" viewBox="0 0 1280 220" preserveAspectRatio="none" style="height: 22%;">
+  <svg class="absolute bottom-0 left-0 w-full" viewBox="0 0 1280 220" preserveAspectRatio="none" style="height: 28%; overflow: visible;">
     <defs>
+      <clipPath id="skyClip">
+        <path d="M 0,0 L 0,140 C 160,90 320,150 480,110 C 640,70 800,140 960,100 C 1120,70 1240,120 1280,95 L 1280,0 Z" />
+      </clipPath>
+      <filter id="edgeBlur" x="-10%" y="-50%" width="120%" height="200%"><feGaussianBlur stdDeviation="8" /></filter>
     </defs>
     <path d="M 0,220 L 0,140 C 160,90 320,150 480,110 C 640,70 800,140 960,100 C 1120,70 1240,120 1280,95 L 1280,220 Z" fill="#c4b5fd" />
+    <g clip-path="url(#skyClip)">
+      <path d="M 0,140 C 160,90 320,150 480,110 C 640,70 800,140 960,100 C 1120,70 1240,120 1280,95" fill="none" stroke="#7c6ea6" stroke-width="16" filter="url(#edgeBlur)" />
+    </g>
   </svg>
 </div>
 
