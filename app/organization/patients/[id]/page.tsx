@@ -115,6 +115,7 @@ export default async function PatientDetailPage({
             initialNotes={notes}
             fixedPatientId={id}
             userId={ctx.userId}
+            organizationId={ctx.organizationId}
             showAddForm
             addNotePlaceholder="Add a clinical note..."
             addNoteAction={addNote}

@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useCallback } from "react";
 import { searchNotes, keywordSearchNotes, getNotes } from "@/lib/notes/actions";
+import { useRealtimeNotes } from "@/lib/supabase/use-realtime-notes";
 import Link from "next/link";
 
 type Note = {
@@ -30,6 +31,7 @@ export function NotesViewer({
   initialPatientId,
   fixedPatientId,
   userId,
+  organizationId,
   showPatientColumn,
   showPatientFilter,
   showAddForm,
@@ -41,6 +43,7 @@ export function NotesViewer({
   initialPatientId?: string;
   fixedPatientId?: string;
   userId?: string;
+  organizationId?: string;
   showPatientColumn?: boolean;
   showPatientFilter?: boolean;
   showAddForm?: boolean;
@@ -59,6 +62,28 @@ export function NotesViewer({
   const [isAdding, startAdd] = useTransition();
 
   const effectivePatientId = fixedPatientId ?? (selectedPatientId || undefined);
+
+  const handleRealtimeInsert = useCallback(
+    (row: Record<string, unknown>) => {
+      if (effectivePatientId && row.patient_id !== effectivePatientId) return;
+      const newNote: Note = {
+        id: row.id as string,
+        patientId: row.patient_id as string,
+        patientName: "",
+        authorId: row.author_id as string,
+        authorName: null,
+        content: row.content as string,
+        createdAt: row.created_at as string,
+      };
+      setNotes((prev) => {
+        if (prev.some((n) => n.id === newNote.id)) return prev;
+        return [newNote, ...prev];
+      });
+    },
+    [effectivePatientId],
+  );
+
+  useRealtimeNotes(organizationId ?? "", handleRealtimeInsert);
 
   function runSearch(query: string, filter: string, fuzzyVal: string, patientId: string | undefined, mode: ViewMode) {
     if (mode === "newest" || mode === "oldest") {

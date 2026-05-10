@@ -1,4 +1,4 @@
-import { getNotes, getPatients } from "@/lib/notes/actions";
+import { getNotes, getPatients, resolveNoteContext } from "@/lib/notes/actions";
 import { NotesViewer } from "@/components/notes-viewer";
 
 export default async function OrganizationNotesPage({
@@ -7,9 +7,10 @@ export default async function OrganizationNotesPage({
   searchParams: Promise<{ patient?: string }>;
 }) {
   const { patient } = await searchParams;
-  const [notes, patients] = await Promise.all([
+  const [notes, patients, ctx] = await Promise.all([
     getNotes(patient),
     getPatients(),
+    resolveNoteContext(),
   ]);
 
   return (
@@ -23,6 +24,7 @@ export default async function OrganizationNotesPage({
           initialNotes={notes}
           patients={patients}
           initialPatientId={patient}
+          organizationId={ctx.organizationId}
           showPatientColumn
           showPatientFilter
         />

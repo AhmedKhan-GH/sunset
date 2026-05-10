@@ -24,6 +24,7 @@ export default async function RelativeNotesPage() {
         <NotesViewer
           initialNotes={notes}
           userId={ctx.userId}
+          organizationId={ctx.organizationId}
           showAddForm
           addNotePlaceholder={`Add an observation about ${patient.name}...`}
           addNoteAction={addNote}

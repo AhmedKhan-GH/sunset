@@ -16,6 +16,7 @@ export default async function PatientNotesPage() {
         <NotesViewer
           initialNotes={notes}
           userId={ctx.userId}
+          organizationId={ctx.organizationId}
           showAddForm
           addNotePlaceholder="Add a personal note (how you're feeling, questions for your care team...)"
           addNoteAction={addNote}
