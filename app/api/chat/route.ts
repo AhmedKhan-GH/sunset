@@ -1,5 +1,4 @@
-import { streamText, convertToModelMessages, tool, stepCountIs } from "ai";
-import { z } from "zod";
+import { streamText, convertToModelMessages, stepCountIs } from "ai";
 import { ollama, DEFAULT_MODEL } from "@/lib/ai/ollama";
 import { createClient } from "@/lib/supabase/server";
 import { db } from "@/lib/db";
@@ -22,17 +21,16 @@ import {
   getMyRecentNotesTool,
   getMyRelativesTool,
 } from "@/lib/ai/tools/self-tools";
-
-const sendNotification = tool({
-  description: "Send a notification to a user with a title and message",
-  inputSchema: z.object({
-    title: z.string().describe("Short title for the notification"),
-    message: z.string().describe("The notification body text"),
-  }),
-  execute: async (input: { title: string; message: string }) => {
-    return { success: true, title: input.title, message: input.message, sentAt: new Date().toISOString() };
-  },
-});
+import {
+  searchOrgNotesTool,
+  searchPatientNotesByDateTool,
+  recentOrgActivityTool,
+} from "@/lib/ai/tools/search-tools";
+import {
+  pingPractitionerTool,
+  pingRelativesTool,
+  pingCareTeamTool,
+} from "@/lib/ai/tools/notification-tools";
 
 export async function POST(req: Request) {
   const supabase = await createClient();
@@ -69,37 +67,51 @@ export async function POST(req: Request) {
       "Answer questions clearly and concisely. " +
       "You do not provide medical diagnoses or prescriptions. " +
       "\n\n" +
-      "You have access to tools that query the platform's database. The tools " +
-      "automatically enforce role-based access control — they will return " +
-      '{ "error": "..." } if the caller is not allowed to perform an action. ' +
-      "When a tool returns an error, relay it briefly to the user instead of retrying.\n\n" +
-      "Available tools fall into three groups:\n" +
-      "1. Patient note tools (practitioners): searchPatientNotes (semantic search " +
-      "over a single patient's notes), recentPatientNotes (latest N notes), " +
-      "addPatientNote (write a new clinical note). For most patient questions, " +
-      "first use findPatientByName to get the patient ID, then call the note tool.\n" +
-      "2. Roster tools (practitioners and org admins): listMyPatients, " +
-      "findPatientByName, getPatientDetails, listOrganizationPractitioners.\n" +
-      "3. Self tools (patients and relatives): getMyOrganization, getMyCareTeam, " +
-      "getMyRecentNotes, getMyRelatives.\n\n" +
-      "When a practitioner asks about a patient, prefer to call a tool over " +
-      "guessing. Cite specific note content when summarizing.",
+      "You have access to tools that query the platform's database. Tools enforce " +
+      "role-based access — they return { \"error\": \"...\" } when the caller is not " +
+      "allowed. Relay tool errors briefly instead of retrying.\n\n" +
+      "Tool groups:\n" +
+      "  • Per-patient notes (practitioners): searchPatientNotes, recentPatientNotes, " +
+      "addPatientNote, searchPatientNotesByDate. To answer patient-specific questions, " +
+      "first call findPatientByName to resolve the patient ID, then a note tool.\n" +
+      "  • Org-wide search (practitioners, org_admins): searchOrgNotes (semantic across " +
+      "all patients), recentOrgActivity (chronological).\n" +
+      "  • Roster (practitioners, org_admins): listMyPatients, findPatientByName, " +
+      "getPatientDetails, listOrganizationPractitioners.\n" +
+      "  • Self (patients, relatives): getMyOrganization, getMyCareTeam, " +
+      "getMyRecentNotes, getMyRelatives.\n" +
+      "  • Notifications: pingPractitioner (patient/relative→doctor), pingRelatives " +
+      "(practitioner→family), pingCareTeam (anyone→doctor + family). Use pingCareTeam " +
+      "for urgent/worsening situations or after a check-in flags concerns. Always " +
+      "include a clear title and a body that states what happened and what to do.\n\n" +
+      "When summarizing notes, cite specific content. When the user asks the system to " +
+      "alert someone, prefer the most appropriate ping tool over guessing.",
     messages: await convertToModelMessages(chatMessages),
     tools: {
-      sendNotification,
+      // notes (per-patient)
       searchPatientNotes: searchPatientNotesTool,
       recentPatientNotes: recentPatientNotesTool,
       addPatientNote: addPatientNoteTool,
+      // search (org-wide + date-bounded)
+      searchOrgNotes: searchOrgNotesTool,
+      searchPatientNotesByDate: searchPatientNotesByDateTool,
+      recentOrgActivity: recentOrgActivityTool,
+      // roster
       listMyPatients: listMyPatientsTool,
       findPatientByName: findPatientByNameTool,
       getPatientDetails: getPatientDetailsTool,
       listOrganizationPractitioners: listOrganizationPractitionersTool,
+      // self (patient/relative)
       getMyOrganization: getMyOrganizationTool,
       getMyCareTeam: getMyCareTeamTool,
       getMyRecentNotes: getMyRecentNotesTool,
       getMyRelatives: getMyRelativesTool,
+      // notifications (AI ping tools)
+      pingPractitioner: pingPractitionerTool,
+      pingRelatives: pingRelativesTool,
+      pingCareTeam: pingCareTeamTool,
     },
-    stopWhen: stepCountIs(6),
+    stopWhen: stepCountIs(8),
     async onFinish({ text, toolCalls }) {
       if (!user || !activeConversationId) return;
 
