@@ -4,6 +4,7 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
 import { profiles, organizations, patients, relatives } from "./schema";
 import { createClient } from "@supabase/supabase-js";
+import { eq } from "drizzle-orm";
 
 dotenv.config({ path: ".env.local" });
 
@@ -112,16 +113,31 @@ async function seed() {
 
   // 6. Relative
   console.log("\n[6/6] relative");
-  const [relative] = await db
-    .insert(relatives)
-    .values({ patientId: patient.id, name: "Jane Doe", relationship: "spouse" })
-    .onConflictDoNothing()
-    .returning();
+  const relativeUserId = await getOrCreateAuthUser("relative@sunset.dev", "admin123");
+  const existingRelatives = await db
+    .select()
+    .from(relatives)
+    .where(eq(relatives.patientId, patient.id));
 
-  if (relative) {
+  if (existingRelatives.length === 0) {
+    const [relative] = await db
+      .insert(relatives)
+      .values({
+        patientId: patient.id,
+        userId: relativeUserId,
+        name: "Jane Doe",
+        relationship: "spouse",
+      })
+      .returning();
     console.log(`  created relative: ${relative.name} (${relative.relationship})`);
+  } else if (!existingRelatives[0].userId) {
+    await db
+      .update(relatives)
+      .set({ userId: relativeUserId })
+      .where(eq(relatives.id, existingRelatives[0].id));
+    console.log(`  linked auth user to existing relative: ${existingRelatives[0].name}`);
   } else {
-    console.log("  relative already exists, skipping");
+    console.log(`  relative already linked: ${existingRelatives[0].name}`);
   }
 
   await client.end();
