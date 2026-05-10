@@ -14,36 +14,45 @@ export default async function PatientsPage() {
         <p className="mt-1 text-sm text-zinc-500">{organization.name}</p>
       )}
 
-      <form action={createPatient} className="mt-6 flex flex-col gap-3">
-        <div className="flex gap-2">
-          <input
-            name="name"
-            type="text"
-            placeholder="Full name"
-            required
-            className="flex-1 rounded border px-3 py-2"
-          />
-          <input
-            name="dateOfBirth"
-            type="date"
-            required
-            className="rounded border px-3 py-2"
-          />
-        </div>
-        <div className="flex gap-2">
-          <select name="gender" required className="rounded border px-3 py-2">
-            <option value="">Gender</option>
-            <option value="male">Male</option>
-            <option value="female">Female</option>
-            <option value="other">Other</option>
-            <option value="unknown">Unknown</option>
-          </select>
-          <button
-            type="submit"
-            className="rounded bg-black px-4 py-2 text-white dark:bg-white dark:text-black"
-          >
-            Add patient
-          </button>
+      <form action={createPatient} className="mt-6 rounded border p-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <label className="flex flex-col gap-1">
+            <span className="text-xs font-medium text-zinc-500">Full name</span>
+            <input
+              name="name"
+              type="text"
+              placeholder="Jane Doe"
+              required
+              className="rounded border px-3 py-2 text-sm"
+            />
+          </label>
+          <label className="flex flex-col gap-1">
+            <span className="text-xs font-medium text-zinc-500">Date of birth</span>
+            <input
+              name="dateOfBirth"
+              type="date"
+              required
+              className="rounded border px-3 py-2 text-sm"
+            />
+          </label>
+          <label className="flex flex-col gap-1">
+            <span className="text-xs font-medium text-zinc-500">Gender</span>
+            <select name="gender" required className="rounded border px-3 py-2 text-sm">
+              <option value="">Select...</option>
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+              <option value="other">Other</option>
+              <option value="unknown">Unknown</option>
+            </select>
+          </label>
+          <div className="flex items-end">
+            <button
+              type="submit"
+              className="w-full rounded bg-black px-4 py-2 text-sm text-white dark:bg-white dark:text-black"
+            >
+              Add patient
+            </button>
+          </div>
         </div>
       </form>
 
