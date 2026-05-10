@@ -29,11 +29,11 @@ const db = drizzle(client);
 
 async function getOrCreateAuthUser(
   email: string,
-  password: string,
+  password?: string,
 ): Promise<string> {
   const { data, error } = await supabase.auth.admin.createUser({
     email,
-    password,
+    password: password ?? crypto.randomUUID(),
     email_confirm: true,
   });
 
@@ -116,7 +116,6 @@ async function seed() {
   console.log("\norganization admins");
   const sunriseAdminId = await getOrCreateAuthUser(
     "maria.santos@sunset.dev",
-    "admin123",
   );
   await db.insert(profiles).values({
     userId: sunriseAdminId,
@@ -127,7 +126,6 @@ async function seed() {
 
   const harborAdminId = await getOrCreateAuthUser(
     "david.chen@sunset.dev",
-    "admin123",
   );
   await db.insert(profiles).values({
     userId: harborAdminId,
@@ -150,7 +148,7 @@ async function seed() {
   const practitionerRecords: Record<string, string> = {};
   const practitionerUserIds: Record<string, string> = {};
   for (const p of practitionerData) {
-    const userId = await getOrCreateAuthUser(p.email, "admin123");
+    const userId = await getOrCreateAuthUser(p.email);
     await db.insert(profiles).values({
       userId,
       name: p.name,
@@ -250,7 +248,7 @@ async function seed() {
   const patientRecords: Record<string, string> = {};
   for (const p of patientData) {
     const userId = p.email
-      ? await getOrCreateAuthUser(p.email, "admin123")
+      ? await getOrCreateAuthUser(p.email)
       : undefined;
 
     if (userId) {
@@ -362,7 +360,7 @@ async function seed() {
 
   for (const r of relativeData) {
     const userId = r.email
-      ? await getOrCreateAuthUser(r.email, "admin123")
+      ? await getOrCreateAuthUser(r.email)
       : undefined;
 
     if (userId) {

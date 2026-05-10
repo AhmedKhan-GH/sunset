@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/client";
 import { getLoginRedirect } from "@/app/login-actions";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import Link from "next/link";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -78,6 +79,13 @@ export default function LoginPage() {
         >
           {loading ? "Signing in..." : "Sign in"}
         </button>
+
+        <Link
+          href="/register"
+          className="rounded border border-black px-4 py-2 text-center text-sm font-medium dark:border-white"
+        >
+          Register
+        </Link>
       </form>
     </div>
   );

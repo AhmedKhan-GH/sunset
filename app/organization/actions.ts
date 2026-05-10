@@ -90,7 +90,7 @@ export async function createPractitioner(formData: FormData) {
 
   const { data, error } = await admin.auth.admin.createUser({
     email: email.trim(),
-    password: "changeme123",
+    password: crypto.randomUUID(),
     email_confirm: true,
   });
   if (error) throw error;
