@@ -41,6 +41,12 @@ export default async function ClinicianPage() {
         <p className="mt-1 text-sm text-zinc-500">
           Signed in as <code>{user?.email}</code>
         </p>
+        <nav className="mt-3 flex gap-3 text-sm">
+          <a href="/clinician" className="font-medium underline">Dashboard</a>
+          <a href="/clinician/checkups" className="text-zinc-600 hover:underline dark:text-zinc-300">
+            Patient checkups →
+          </a>
+        </nav>
       </header>
 
       <CheckinsFeed initial={(initialCheckins ?? []) as Checkin[]} />
