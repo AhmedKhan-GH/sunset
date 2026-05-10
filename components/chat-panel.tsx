@@ -89,7 +89,7 @@ export function ChatPanel() {
     <div className="flex h-full">
       <div className="flex w-48 flex-col border-r">
         <div className="border-b px-3 py-2">
-          <span className="text-xs font-medium text-zinc-500">History</span>
+          <span className="text-xs font-medium text-zinc-400">History</span>
         </div>
         <div className="flex-1 overflow-y-auto">
           {conversationList.map((c) => (
@@ -183,7 +183,7 @@ function ChatHeader({
           ) : (
             <button
               onClick={startEditing}
-              className="truncate text-sm font-medium hover:text-zinc-600 dark:hover:text-zinc-300"
+              className="w-full truncate rounded bg-transparent px-1 text-left text-sm font-medium ring-1 ring-zinc-200 hover:ring-zinc-400 dark:ring-zinc-700 dark:hover:ring-zinc-500"
               title="Click to rename"
             >
               {title || "New conversation"}
@@ -195,7 +195,7 @@ function ChatHeader({
       </div>
       <button
         onClick={onNewChat}
-        className="ml-3 shrink-0 rounded border px-2.5 py-1 text-xs text-zinc-500 hover:bg-zinc-50 hover:text-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+        className="ml-3 shrink-0 rounded border px-2.5 py-1 text-xs text-zinc-900 hover:bg-zinc-50 dark:text-zinc-100 dark:hover:bg-zinc-800"
       >
         New chat
       </button>
@@ -356,7 +356,7 @@ function ChatMessages({
           <button
             type="submit"
             disabled={isLoading || !input.trim()}
-            className="rounded bg-black px-4 py-2 text-sm text-white disabled:opacity-40 dark:bg-white dark:text-black"
+            className="rounded bg-black px-4 py-2 text-sm text-white disabled:opacity-60 dark:bg-white dark:text-black"
           >
             Send
           </button>
