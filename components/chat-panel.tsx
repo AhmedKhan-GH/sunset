@@ -1,25 +1,176 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useChat } from "@ai-sdk/react";
+import { DefaultChatTransport } from "ai";
+
+interface Conversation {
+  id: string;
+  title: string | null;
+  createdAt: number;
+  updatedAt: number;
+}
+
+interface StoredMessage {
+  id: string;
+  role: string;
+  content: string;
+}
+
+function storedToUIMessages(stored: StoredMessage[]) {
+  return stored
+    .filter((m) => m.role === "user" || m.role === "assistant")
+    .map((m) => ({
+      id: m.id,
+      role: m.role as "user" | "assistant",
+      parts: [{ type: "text" as const, text: m.content }],
+    }));
+}
 
 export function ChatPanel() {
+  const [conversationList, setConversationList] = useState<Conversation[]>([]);
+  const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
+  const [initialMessages, setInitialMessages] = useState<
+    { id: string; role: "user" | "assistant"; parts: { type: "text"; text: string }[] }[]
+  >([]);
+  const [chatKey, setChatKey] = useState(0);
+
+  const loadConversations = useCallback(async () => {
+    const res = await fetch("/api/conversations");
+    if (res.ok) setConversationList(await res.json());
+  }, []);
+
+  useEffect(() => {
+    loadConversations();
+  }, [loadConversations]);
+
+  async function selectConversation(id: string) {
+    setActiveConversationId(id);
+    const res = await fetch(`/api/conversations/${id}/messages`);
+    if (res.ok) {
+      setInitialMessages(storedToUIMessages(await res.json()));
+    } else {
+      setInitialMessages([]);
+    }
+    setChatKey((k) => k + 1);
+  }
+
+  function startNewChat() {
+    setActiveConversationId(null);
+    setInitialMessages([]);
+    setChatKey((k) => k + 1);
+  }
+
+  function handleConversationCreated(id: string, title: string | null) {
+    setActiveConversationId(id);
+    setConversationList((prev) => [
+      { id, title, createdAt: Date.now() / 1000, updatedAt: Date.now() / 1000 },
+      ...prev,
+    ]);
+  }
+
+  return (
+    <div className="flex h-full">
+      <div className="flex w-48 flex-col border-r">
+        <div className="flex items-center justify-between border-b px-3 py-2">
+          <span className="text-xs font-medium text-zinc-500">History</span>
+          <button
+            onClick={startNewChat}
+            className="text-xs text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
+          >
+            + New
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto">
+          {conversationList.map((c) => (
+            <button
+              key={c.id}
+              onClick={() => selectConversation(c.id)}
+              className={`w-full truncate px-3 py-2 text-left text-xs ${
+                c.id === activeConversationId
+                  ? "bg-zinc-100 dark:bg-zinc-800"
+                  : "hover:bg-zinc-50 dark:hover:bg-zinc-900"
+              }`}
+            >
+              {c.title || "New conversation"}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="flex flex-1 flex-col">
+        <ChatMessages
+          key={chatKey}
+          conversationId={activeConversationId}
+          initialMessages={initialMessages}
+          onConversationCreated={handleConversationCreated}
+          onMessageSent={loadConversations}
+        />
+      </div>
+    </div>
+  );
+}
+
+function ChatMessages({
+  conversationId,
+  initialMessages,
+  onConversationCreated,
+  onMessageSent,
+}: {
+  conversationId: string | null;
+  initialMessages: { id: string; role: "user" | "assistant"; parts: { type: "text"; text: string }[] }[];
+  onConversationCreated: (id: string, title: string | null) => void;
+  onMessageSent: () => void;
+}) {
   const [input, setInput] = useState("");
-  const { messages, sendMessage, status, error } = useChat();
+  const convIdRef = useRef(conversationId);
+  const createdRef = useRef(false);
+
+  const { messages, sendMessage, status, error } = useChat({
+    ...(conversationId ? { id: conversationId } : {}),
+    messages: initialMessages,
+    transport: new DefaultChatTransport({
+      api: "/api/chat",
+      body: () => ({ conversationId: convIdRef.current }),
+    }),
+    onFinish() {
+      onMessageSent();
+    },
+  });
 
   const isLoading = status === "streaming" || status === "submitted";
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    scrollRef.current?.scrollTo(0, scrollRef.current.scrollHeight);
+  }, [messages, status]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const text = input.trim();
     if (!text || isLoading) return;
     setInput("");
+
+    if (!convIdRef.current && !createdRef.current) {
+      createdRef.current = true;
+      const res = await fetch("/api/conversations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: text.slice(0, 100) }),
+      });
+      if (res.ok) {
+        const conv = await res.json();
+        convIdRef.current = conv.id;
+        onConversationCreated(conv.id, conv.title);
+      }
+    }
+
     await sendMessage({ text });
   }
 
   return (
-    <div className="flex h-full flex-col">
-      <div className="flex-1 overflow-y-auto p-4">
+    <>
+      <div ref={scrollRef} className="flex-1 overflow-y-auto p-4">
         {messages.length === 0 && (
           <p className="text-sm text-zinc-400">
             Ask anything. Inference runs locally via Ollama.
@@ -39,9 +190,9 @@ export function ChatPanel() {
                     : "bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100"
                 }`}
               >
-                {m.parts.map((p, i) => {
+                {m.parts.map((p: Record<string, unknown>, i: number) => {
                   if (p.type === "text") {
-                    return <span key={i}>{p.text}</span>;
+                    return <span key={i}>{p.text as string}</span>;
                   }
                   if (p.type === "tool-sendNotification" && p.state === "output-available") {
                     const { title, message } = p.output as { success: boolean; title: string; message: string };
@@ -92,6 +243,6 @@ export function ChatPanel() {
           </button>
         </div>
       </form>
-    </div>
+    </>
   );
 }
