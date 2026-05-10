@@ -34,3 +34,6 @@ https://virtualspirit.me/insights/293/top-5-colours-for-healthcare-app-design-ba
 
 - Color palettes for mental healthcare UI
 https://fuzzymath.com/blog/the-color-palettes-of-mental-healthcare-ui/
+
+portal design:
+https://uxui.graphymania.com/healthcare-ux-design-apps-to-portals/

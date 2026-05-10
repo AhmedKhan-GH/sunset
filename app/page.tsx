@@ -37,6 +37,13 @@ export default function WelcomePage() {
         >
           LET&apos;S GO
         </Link>
+
+        <Link
+          href="/family"
+          className="mt-5 text-base font-medium text-brand hover:underline"
+        >
+          I&apos;m a family caregiver →
+        </Link>
       </main>
     </div>
   );

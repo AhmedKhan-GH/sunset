@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/client";
 import { SunsetLogo } from "@/components/sunset-logo";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type SubmitEvent } from "react";
 
@@ -97,12 +98,12 @@ export default function LoginPage() {
           >
             Activate my account
           </button>
-          <button
-            type="button"
-            className="w-full rounded-xl border-2 border-brand bg-surface px-5 py-4 text-base font-semibold text-brand transition-colors hover:bg-brand/10"
+          <Link
+            href="/family"
+            className="w-full rounded-xl border-2 border-brand bg-surface px-5 py-4 text-center text-base font-semibold text-brand transition-colors hover:bg-brand/10"
           >
             Family caregiver access
-          </button>
+          </Link>
           <button
             type="button"
             className="w-full rounded-xl border-2 border-brand bg-surface px-5 py-4 text-base font-semibold text-brand transition-colors hover:bg-brand/10"
