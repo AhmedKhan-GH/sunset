@@ -1,8 +1,13 @@
-import { getNotes, createNote, resolveNoteContext } from "@/lib/notes/actions";
+import { getNotes, createNote } from "@/lib/notes/actions";
+import { resolveNoteContext } from "@/lib/notes/context";
 import { NotesViewer } from "@/components/notes-viewer";
 
 export default async function PatientNotesPage() {
-  const [notes, ctx] = await Promise.all([getNotes(), resolveNoteContext()]);
+  // Sequential, not Promise.all — running resolveNoteContext + getNotes in
+  // parallel each triggers a supabase.auth.getUser() call which races on
+  // cookie writes from Server Components and corrupts the session.
+  const ctx = await resolveNoteContext();
+  const notes = await getNotes();
 
   const addNote = createNote.bind(null, ctx.patientId!);
 

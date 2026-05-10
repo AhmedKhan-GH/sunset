@@ -106,6 +106,31 @@ export async function listMyPendingCheckins(): Promise<Checkin[]> {
   return (data ?? []).map(rowToCheckin);
 }
 
+export async function getMyCheckinSummary(): Promise<{
+  pendingCount: number;
+  lastCompleted: Checkin | null;
+}> {
+  await requireRole("patient");
+  const supabase = await createClient();
+  const [pendingRes, completedRes] = await Promise.all([
+    supabase
+      .from("symptom_checkins")
+      .select("*", { count: "exact", head: true })
+      .eq("status", "pending"),
+    supabase
+      .from("symptom_checkins")
+      .select("*")
+      .eq("status", "completed")
+      .order("completed_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+  ]);
+  return {
+    pendingCount: pendingRes.count ?? 0,
+    lastCompleted: completedRes.data ? rowToCheckin(completedRes.data) : null,
+  };
+}
+
 export async function listMyRecentCompletedCheckins(limit = 10): Promise<Checkin[]> {
   await requireRole("patient");
   const supabase = await createClient();

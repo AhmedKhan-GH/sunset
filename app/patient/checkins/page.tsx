@@ -5,14 +5,34 @@ import {
   listMyRecentCompletedCheckins,
 } from "@/lib/checkins/actions";
 
+type SymptomKey =
+  | "pain_score"
+  | "nausea_score"
+  | "shortness_of_breath_score"
+  | "anxiety_score"
+  | "fatigue_score"
+  | "appetite_score"
+  | "mood_score"
+  | "sleep_score";
+
+const SYMPTOMS: { key: SymptomKey; label: string; hiGood?: boolean }[] = [
+  { key: "pain_score", label: "Pain" },
+  { key: "nausea_score", label: "Nausea" },
+  { key: "shortness_of_breath_score", label: "SOB" },
+  { key: "anxiety_score", label: "Anxiety" },
+  { key: "fatigue_score", label: "Fatigue" },
+  { key: "appetite_score", label: "Appetite", hiGood: true },
+  { key: "mood_score", label: "Mood", hiGood: true },
+  { key: "sleep_score", label: "Sleep", hiGood: true },
+];
+
 export default async function PatientCheckinsPage() {
   let pending: Awaited<ReturnType<typeof listMyPendingCheckins>>;
   let recent: Awaited<ReturnType<typeof listMyRecentCompletedCheckins>>;
   try {
-    [pending, recent] = await Promise.all([
-      listMyPendingCheckins(),
-      listMyRecentCompletedCheckins(5),
-    ]);
+    // Sequential to avoid auth-race; safe with cached resolveNoteContext
+    pending = await listMyPendingCheckins();
+    recent = await listMyRecentCompletedCheckins(7);
   } catch {
     redirect("/");
   }
@@ -59,6 +79,79 @@ export default async function PatientCheckinsPage() {
         )}
       </section>
 
+      {recent.length >= 2 && (
+        <section className="mt-10">
+          <h2 className="text-lg font-semibold">Trends — last {recent.length} check-ins</h2>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Each row shows oldest → newest, left to right. Arrow shows whether
+            the most recent value is better, worse, or same compared to the
+            first one in the window.
+          </p>
+          <div className="mt-4 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+            <table className="w-full text-xs">
+              <thead className="bg-slate-50 text-left text-[10px] uppercase tracking-wide text-muted-foreground">
+                <tr>
+                  <th className="px-4 py-2 font-medium">Symptom</th>
+                  {[...recent].reverse().map((c) => (
+                    <th key={c.id} className="px-2 py-2 text-center font-medium">
+                      {c.completed_at
+                        ? new Date(c.completed_at).toLocaleDateString(undefined, {
+                            month: "numeric",
+                            day: "numeric",
+                          })
+                        : "—"}
+                      <div className="text-[9px] font-normal capitalize">
+                        {c.scheduled_kind[0]}
+                      </div>
+                    </th>
+                  ))}
+                  <th className="px-3 py-2 text-center font-medium">Trend</th>
+                </tr>
+              </thead>
+              <tbody>
+                {SYMPTOMS.map((s) => {
+                  const series = [...recent]
+                    .reverse()
+                    .map((c) => c[s.key] as number | null);
+                  const first = series.find((v) => v !== null) ?? null;
+                  const last =
+                    [...series].reverse().find((v) => v !== null) ?? null;
+                  const delta =
+                    first !== null && last !== null ? last - first : null;
+                  const arrow =
+                    delta === null
+                      ? "—"
+                      : delta === 0
+                        ? "→"
+                        : (s.hiGood ? delta > 0 : delta < 0)
+                          ? "↑ better"
+                          : "↓ worse";
+                  const arrowClass =
+                    delta === null || delta === 0
+                      ? "text-muted-foreground"
+                      : (s.hiGood ? delta > 0 : delta < 0)
+                        ? "text-emerald-700"
+                        : "text-red-700";
+                  return (
+                    <tr key={s.key} className="border-t border-slate-100">
+                      <td className="px-4 py-2 font-medium">{s.label}</td>
+                      {series.map((v, i) => (
+                        <td key={i} className="px-2 py-2 text-center">
+                          <ScoreChip value={v} hiGood={s.hiGood} />
+                        </td>
+                      ))}
+                      <td className={`px-3 py-2 text-center font-medium ${arrowClass}`}>
+                        {arrow}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
+
       <section className="mt-10">
         <h2 className="text-lg font-semibold">Recent</h2>
         {recent.length === 0 ? (
@@ -103,6 +196,36 @@ export default async function PatientCheckinsPage() {
         )}
       </section>
     </div>
+  );
+}
+
+function ScoreChip({
+  value,
+  hiGood = false,
+}: {
+  value: number | null;
+  hiGood?: boolean;
+}) {
+  const cls =
+    value === null
+      ? "bg-slate-100 text-slate-400"
+      : hiGood
+        ? value >= 7
+          ? "bg-emerald-100 text-emerald-800"
+          : value >= 4
+            ? "bg-amber-100 text-amber-800"
+            : "bg-red-100 text-red-800"
+        : value >= 7
+          ? "bg-red-100 text-red-800"
+          : value >= 4
+            ? "bg-amber-100 text-amber-800"
+            : "bg-emerald-100 text-emerald-800";
+  return (
+    <span
+      className={`inline-block min-w-[1.5rem] rounded px-1.5 py-0.5 text-center font-mono text-xs font-semibold ${cls}`}
+    >
+      {value ?? "—"}
+    </span>
   );
 }
 

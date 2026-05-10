@@ -1,9 +1,11 @@
+import Link from "next/link";
 import {
   getMyPatient,
   getMyRelatives,
   getCareTeam,
   createRelative,
 } from "./actions";
+import { getMyCheckinSummary } from "@/lib/checkins/actions";
 
 export default async function PatientPage() {
   const [patient, relatives, careTeam] = await Promise.all([
@@ -11,6 +13,8 @@ export default async function PatientPage() {
     getMyRelatives(),
     getCareTeam(),
   ]);
+  // Sequential to avoid auth-race on /patient — see /patient/notes for context
+  const summary = await getMyCheckinSummary();
 
   return (
     <div className="mx-auto w-full max-w-3xl p-8">
@@ -21,6 +25,60 @@ export default async function PatientPage() {
         </span>
         <span className="capitalize">{patient.gender}</span>
       </div>
+
+      {/* Check-in banner: pending CTA when pending, otherwise last-check-in summary */}
+      {summary.pendingCount > 0 ? (
+        <Link
+          href="/patient/checkins"
+          className="mt-6 flex items-center justify-between rounded-xl border border-amber-300 bg-amber-50 p-5 shadow-sm transition hover:bg-amber-100"
+        >
+          <div>
+            <div className="text-sm font-semibold text-amber-900">
+              You have {summary.pendingCount} check-in
+              {summary.pendingCount === 1 ? "" : "s"} waiting
+            </div>
+            <div className="mt-1 text-xs text-amber-800">
+              Quick symptom check — about a minute. Your care team sees it
+              right away.
+            </div>
+          </div>
+          <span className="rounded-full bg-amber-600 px-4 py-2 text-sm font-medium text-white">
+            Start →
+          </span>
+        </Link>
+      ) : summary.lastCompleted ? (
+        <Link
+          href="/patient/checkins"
+          className="mt-6 flex items-center justify-between rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition hover:bg-slate-50"
+        >
+          <div>
+            <div className="text-sm font-semibold">
+              All caught up on check-ins
+            </div>
+            <div className="mt-1 text-xs text-muted-foreground">
+              Last submitted{" "}
+              {new Date(summary.lastCompleted.completed_at!).toLocaleString()} ·
+              pain {summary.lastCompleted.pain_score ?? "—"}, fatigue{" "}
+              {summary.lastCompleted.fatigue_score ?? "—"}
+            </div>
+          </div>
+          <span className="text-sm text-muted-foreground">View all →</span>
+        </Link>
+      ) : (
+        <Link
+          href="/patient/checkins"
+          className="mt-6 flex items-center justify-between rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition hover:bg-slate-50"
+        >
+          <div>
+            <div className="text-sm font-semibold">Symptom check-ins</div>
+            <div className="mt-1 text-xs text-muted-foreground">
+              Twice a day we&apos;ll ask how you&apos;re feeling so your care
+              team can keep up.
+            </div>
+          </div>
+          <span className="text-sm text-muted-foreground">Open →</span>
+        </Link>
+      )}
 
       <section className="mt-10">
         <h2 className="text-lg font-semibold">Care team</h2>

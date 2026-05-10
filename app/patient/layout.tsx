@@ -65,6 +65,7 @@ export default async function PatientLayout({
             <NavLink href="/patient" exact>
               Home
             </NavLink>
+            <NavLink href="/patient/checkins">Check-ins</NavLink>
             <NavLink href="/patient/notes">Notes</NavLink>
             <NavLink href="/patient/chat">Chat</NavLink>
           </nav>

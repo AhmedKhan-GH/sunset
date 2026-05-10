@@ -1,82 +1,17 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
 import { db, sql } from "@/lib/db";
-import { profiles, patients, relatives } from "@/lib/db/schema";
+import { patients } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
-import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { embedText, vectorLiteral } from "@/lib/llm/embed";
+import { resolveNoteContext } from "./context";
 
-type NoteContext = {
-  userId: string;
-  supabase: Awaited<ReturnType<typeof createClient>>;
-  organizationId: string;
-  patientId?: string;
-  role: string;
-};
-
-export async function resolveNoteContext(): Promise<NoteContext> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/");
-
-  const [profile] = await db
-    .select()
-    .from(profiles)
-    .where(eq(profiles.userId, user.id));
-
-  if (!profile) redirect("/");
-
-  if (profile.role === "organization_admin" || profile.role === "practitioner") {
-    if (!profile.organizationId) redirect("/");
-    return {
-      userId: user.id,
-      supabase,
-      organizationId: profile.organizationId,
-      role: profile.role,
-    };
-  }
-
-  if (profile.role === "patient") {
-    const [patient] = await db
-      .select()
-      .from(patients)
-      .where(eq(patients.userId, user.id));
-    if (!patient) redirect("/");
-    return {
-      userId: user.id,
-      supabase,
-      organizationId: patient.organizationId,
-      patientId: patient.id,
-      role: profile.role,
-    };
-  }
-
-  if (profile.role === "relative") {
-    const [relative] = await db
-      .select()
-      .from(relatives)
-      .where(eq(relatives.userId, user.id));
-    if (!relative) redirect("/");
-    const [patient] = await db
-      .select()
-      .from(patients)
-      .where(eq(patients.id, relative.patientId));
-    if (!patient) redirect("/");
-    return {
-      userId: user.id,
-      supabase,
-      organizationId: patient.organizationId,
-      patientId: patient.id,
-      role: profile.role,
-    };
-  }
-
-  redirect("/");
-}
+// Re-exported here so existing imports from "@/lib/notes/actions" continue
+// to work. The actual implementation (and react.cache wrapper) lives in
+// ./context.ts — outside the "use server" boundary so Next.js doesn't strip
+// the memoization.
+export { resolveNoteContext };
 
 export async function getNotes(patientId?: string) {
   const ctx = await resolveNoteContext();
