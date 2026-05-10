@@ -58,6 +58,18 @@ async function seed() {
   const patientNotesSql = fs.readFileSync("./supabase/snippets/patient_notes.sql", "utf8");
   await client.unsafe(patientNotesSql);
 
+  console.log("\nenabling RLS policy for audit log");
+  await client.unsafe(`
+    create policy "organization members can read own audit logs"
+      on audit.log for select to authenticated
+      using (
+        organization_id in (
+          select organization_id from public.profiles
+          where user_id = auth.uid()
+        )
+      );
+  `);
+
   console.log("\nenabling realtime + audit triggers");
   await client.unsafe(`
     alter publication supabase_realtime add table public.patient_notes;
