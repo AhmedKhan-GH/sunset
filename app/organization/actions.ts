@@ -50,8 +50,16 @@ export async function getPractitioners() {
   const admin = createAdminClient();
 
   const practitionerList = await db
-    .select()
+    .select({
+      userId: practitioners.userId,
+      organizationId: practitioners.organizationId,
+      specialty: practitioners.specialty,
+      licenseNumber: practitioners.licenseNumber,
+      npi: practitioners.npi,
+      name: profiles.name,
+    })
     .from(practitioners)
+    .innerJoin(profiles, eq(profiles.userId, practitioners.userId))
     .where(eq(practitioners.organizationId, profile.organizationId));
 
   const {
@@ -72,11 +80,13 @@ export async function createPractitioner(formData: FormData) {
   const admin = createAdminClient();
 
   const email = formData.get("email");
+  const name = formData.get("name");
   const specialty = formData.get("specialty");
   const licenseNumber = formData.get("licenseNumber");
   const npi = formData.get("npi");
 
   if (typeof email !== "string" || !email.trim()) return;
+  if (typeof name !== "string" || !name.trim()) return;
 
   const { data, error } = await admin.auth.admin.createUser({
     email: email.trim(),
@@ -87,6 +97,7 @@ export async function createPractitioner(formData: FormData) {
 
   await db.insert(profiles).values({
     userId: data.user.id,
+    name: name.trim(),
     role: "practitioner",
     organizationId: profile.organizationId,
   });

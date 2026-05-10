@@ -14,6 +14,16 @@ export default async function OrganizationPage() {
       <form action={createPractitioner} className="mt-6 rounded border p-4">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <label className="flex flex-col gap-1">
+            <span className="text-xs font-medium text-zinc-500">Full name</span>
+            <input
+              name="name"
+              type="text"
+              placeholder="Dr. Jane Smith"
+              required
+              className="rounded border px-3 py-2 text-sm"
+            />
+          </label>
+          <label className="flex flex-col gap-1">
             <span className="text-xs font-medium text-zinc-500">Email</span>
             <input
               name="email"
@@ -66,17 +76,16 @@ export default async function OrganizationPage() {
             className="rounded border px-4 py-3"
           >
             <div className="flex items-center justify-between">
-              <span className="font-medium">{p.email}</span>
+              <span className="font-medium">{p.name ?? p.email}</span>
               {p.specialty && (
                 <span className="text-sm text-zinc-500">{p.specialty}</span>
               )}
             </div>
-            {(p.licenseNumber || p.npi) && (
-              <div className="mt-1 flex gap-4 text-xs text-zinc-400">
-                {p.licenseNumber && <span>License: {p.licenseNumber}</span>}
-                {p.npi && <span>NPI: {p.npi}</span>}
-              </div>
-            )}
+            <div className="mt-1 flex gap-4 text-xs text-zinc-400">
+              {p.name && <span>{p.email}</span>}
+              {p.licenseNumber && <span>License: {p.licenseNumber}</span>}
+              {p.npi && <span>NPI: {p.npi}</span>}
+            </div>
           </li>
         ))}
         {practitioners.length === 0 && (

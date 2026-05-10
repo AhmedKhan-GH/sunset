@@ -66,7 +66,7 @@ async function seed() {
   );
   await db
     .insert(profiles)
-    .values({ userId: platformAdminId, role: "platform_admin" })
+    .values({ userId: platformAdminId, name: "Platform Admin", role: "platform_admin" })
     .onConflictDoNothing();
 
   // ── Organizations ───────────────────────────────────────────────────────
@@ -89,6 +89,7 @@ async function seed() {
   );
   await db.insert(profiles).values({
     userId: sunriseAdminId,
+    name: "Maria Santos",
     role: "organization_admin",
     organizationId: sunriseHospice.id,
   });
@@ -99,6 +100,7 @@ async function seed() {
   );
   await db.insert(profiles).values({
     userId: harborAdminId,
+    name: "David Chen",
     role: "organization_admin",
     organizationId: harborPalliative.id,
   });
@@ -107,11 +109,11 @@ async function seed() {
   console.log("\npractitioners");
 
   const practitionerData = [
-    { email: "dr.amara.okafor@sunset.dev", organizationId: sunriseHospice.id, specialty: "Palliative Medicine", licenseNumber: "MD-2019-44821", npi: "1234567890" },
-    { email: "dr.james.whitfield@sunset.dev", organizationId: sunriseHospice.id, specialty: "Geriatric Medicine", licenseNumber: "MD-2015-31205", npi: "2345678901" },
-    { email: "nurse.priya.sharma@sunset.dev", organizationId: sunriseHospice.id, specialty: "Hospice Nursing", licenseNumber: "RN-2018-78432", npi: "3456789012" },
-    { email: "dr.elena.rodriguez@sunset.dev", organizationId: harborPalliative.id, specialty: "Pain Management", licenseNumber: "MD-2017-55910", npi: "4567890123" },
-    { email: "nurse.ben.tanaka@sunset.dev", organizationId: harborPalliative.id, specialty: "Palliative Nursing", licenseNumber: "RN-2020-62187", npi: "5678901234" },
+    { email: "dr.amara.okafor@sunset.dev", name: "Dr. Amara Okafor", organizationId: sunriseHospice.id, specialty: "Palliative Medicine", licenseNumber: "MD-2019-44821", npi: "1234567890" },
+    { email: "dr.james.whitfield@sunset.dev", name: "Dr. James Whitfield", organizationId: sunriseHospice.id, specialty: "Geriatric Medicine", licenseNumber: "MD-2015-31205", npi: "2345678901" },
+    { email: "nurse.priya.sharma@sunset.dev", name: "Priya Sharma, RN", organizationId: sunriseHospice.id, specialty: "Hospice Nursing", licenseNumber: "RN-2018-78432", npi: "3456789012" },
+    { email: "dr.elena.rodriguez@sunset.dev", name: "Dr. Elena Rodriguez", organizationId: harborPalliative.id, specialty: "Pain Management", licenseNumber: "MD-2017-55910", npi: "4567890123" },
+    { email: "nurse.ben.tanaka@sunset.dev", name: "Ben Tanaka, RN", organizationId: harborPalliative.id, specialty: "Palliative Nursing", licenseNumber: "RN-2020-62187", npi: "5678901234" },
   ];
 
   const practitionerRecords: Record<string, string> = {};
@@ -120,6 +122,7 @@ async function seed() {
     const userId = await getOrCreateAuthUser(p.email, "admin123");
     await db.insert(profiles).values({
       userId,
+      name: p.name,
       role: "practitioner",
       organizationId: p.organizationId,
     });
@@ -219,6 +222,15 @@ async function seed() {
       ? await getOrCreateAuthUser(p.email, "admin123")
       : undefined;
 
+    if (userId) {
+      await db.insert(profiles).values({
+        userId,
+        name: p.name,
+        role: "patient",
+        organizationId: p.organizationId,
+      });
+    }
+
     const [patient] = await db
       .insert(patients)
       .values({
@@ -313,10 +325,23 @@ async function seed() {
     },
   ];
 
+  const patientOrgMap = Object.fromEntries(
+    patientData.map((p) => [p.name, p.organizationId]),
+  );
+
   for (const r of relativeData) {
     const userId = r.email
       ? await getOrCreateAuthUser(r.email, "admin123")
       : undefined;
+
+    if (userId) {
+      await db.insert(profiles).values({
+        userId,
+        name: r.name,
+        role: "relative",
+        organizationId: patientOrgMap[r.patientName],
+      });
+    }
 
     await db.insert(relatives).values({
       patientId: patientRecords[r.patientName],

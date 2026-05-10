@@ -45,6 +45,7 @@ export const profiles = pgTable(
   "profiles",
   {
     userId: uuid("user_id").primaryKey(),
+    name: text("name"),
     role: text("role").notNull(),
     organizationId: uuid("organization_id").references(() => organizations.id, {
       onDelete: "set null",
