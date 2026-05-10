@@ -215,9 +215,9 @@ function ChatMessages({
             <div className="rounded-lg bg-zinc-100 px-4 py-2 text-sm text-zinc-400 dark:bg-zinc-800">
               Thinking
               <span className="inline-flex w-4">
-                <span className="animate-[pulse_1.4s_ease-in-out_infinite]">.</span>
-                <span className="animate-[pulse_1.4s_ease-in-out_0.2s_infinite]">.</span>
-                <span className="animate-[pulse_1.4s_ease-in-out_0.4s_infinite]">.</span>
+                <span className="animate-pulse">.</span>
+                <span className="animate-pulse delay-200">.</span>
+                <span className="animate-pulse delay-400">.</span>
               </span>
             </div>
           </div>
