@@ -102,14 +102,14 @@ export default function LoginPage() {
             href="/family"
             className="w-full rounded-xl border-2 border-brand bg-surface px-5 py-4 text-center text-base font-semibold text-brand transition-colors hover:bg-brand/10"
           >
-            Family caregiver access
+            I&apos;m a family caregiver →
           </Link>
-          <button
-            type="button"
-            className="w-full rounded-xl border-2 border-brand bg-surface px-5 py-4 text-base font-semibold text-brand transition-colors hover:bg-brand/10"
+          <Link
+            href="/practitioner"
+            className="w-full rounded-xl border-2 border-brand bg-surface px-5 py-4 text-center text-base font-semibold text-brand transition-colors hover:bg-brand/10"
           >
-            Hospice provider login
-          </button>
+            I'm a care provider →
+          </Link>
         </div>
 
         <div className="mt-10 rounded-2xl bg-brand/5 p-6">

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { SunsetLogo } from "@/components/sunset-logo";
 import { Sidebar } from "./sidebar";
-import { SignOutButton } from "./sign-out-button";
+import { SignOutButton } from "@/components/sign-out-button";
 
 const symptoms = [
   {

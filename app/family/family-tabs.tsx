@@ -15,7 +15,10 @@ export function FamilyTabs() {
   const pathname = usePathname();
 
   return (
-    <nav aria-label="Family portal sections" className="flex gap-1 overflow-x-auto">
+    <nav
+      aria-label="Family portal sections"
+      className="-mb-px flex gap-1 overflow-x-auto"
+    >
       {tabs.map((tab) => {
         const isActive = pathname === tab.href;
         return (
@@ -25,8 +28,8 @@ export function FamilyTabs() {
             aria-current={isActive ? "page" : undefined}
             className={
               isActive
-                ? "rounded-t-md bg-slate-50 px-5 py-2.5 text-sm font-semibold text-slate-900"
-                : "rounded-t-md px-5 py-2.5 text-sm font-medium text-white/80 hover:bg-white/10"
+                ? "border-b-2 border-brand px-5 py-3 text-sm font-semibold text-brand"
+                : "border-b-2 border-transparent px-5 py-3 text-sm font-medium text-slate-600 transition-colors hover:text-slate-900"
             }
           >
             {tab.label}

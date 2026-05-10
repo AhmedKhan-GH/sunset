@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { db } from "@/lib/db";
 import { profiles } from "@/lib/db/schema";
 import { SunsetLogo } from "@/components/sunset-logo";
+import { SignOutButton } from "@/components/sign-out-button";
 
 async function requirePlatformAdmin() {
   const supabase = await createClient();
@@ -69,6 +70,7 @@ export default async function AdminLayout({
             >
               Patient view
             </Link>
+            <SignOutButton />
           </div>
         </div>
       </header>
