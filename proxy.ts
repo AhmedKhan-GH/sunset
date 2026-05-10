@@ -1,6 +1,8 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+const protectedPrefixes = ["/admin", "/organization", "/patient", "/relative"];
+
 export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
@@ -29,17 +31,13 @@ export async function proxy(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const isProtected = request.nextUrl.pathname.startsWith("/admin");
+  const isProtected = protectedPrefixes.some((prefix) =>
+    request.nextUrl.pathname.startsWith(prefix),
+  );
 
   if (isProtected && !user) {
     const url = request.nextUrl.clone();
     url.pathname = "/";
-    return NextResponse.redirect(url);
-  }
-
-  if (request.nextUrl.pathname === "/" && user) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/admin";
     return NextResponse.redirect(url);
   }
 
