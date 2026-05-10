@@ -1,5 +1,5 @@
-import { getOrganizationNotes, getOrganizationPatients } from "./actions";
-import { NotesSearch } from "./notes-search";
+import { getNotes, getPatients } from "@/lib/notes/actions";
+import { NotesViewer } from "@/components/notes-viewer";
 
 export default async function OrganizationNotesPage({
   searchParams,
@@ -8,8 +8,8 @@ export default async function OrganizationNotesPage({
 }) {
   const { patient } = await searchParams;
   const [notes, patients] = await Promise.all([
-    getOrganizationNotes(patient),
-    getOrganizationPatients(),
+    getNotes(patient),
+    getPatients(),
   ]);
 
   return (
@@ -19,10 +19,12 @@ export default async function OrganizationNotesPage({
         Semantic search across all patient notes in your organization.
       </p>
       <div className="mt-6">
-        <NotesSearch
+        <NotesViewer
           initialNotes={notes}
           patients={patients}
           initialPatientId={patient}
+          showPatientColumn
+          showPatientFilter
         />
       </div>
     </div>

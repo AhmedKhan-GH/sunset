@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { getPatientWithRelatives, createRelative } from "../../actions";
-import { getPatientNotes, createPatientNote } from "./notes-actions";
-import { NotesSection } from "./notes-section";
+import { getNotes, createNote, resolveNoteContext } from "@/lib/notes/actions";
+import { NotesViewer } from "@/components/notes-viewer";
 
 export default async function PatientDetailPage({
   params,
@@ -9,13 +9,14 @@ export default async function PatientDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [{ patient, relatives }, notes] = await Promise.all([
+  const [{ patient, relatives }, notes, ctx] = await Promise.all([
     getPatientWithRelatives(id),
-    getPatientNotes(id),
+    getNotes(id),
+    resolveNoteContext(),
   ]);
 
   const addRelative = createRelative.bind(null, id);
-  const addNote = createPatientNote.bind(null, id);
+  const addNote = createNote.bind(null, id);
 
   return (
     <div className="mx-auto w-full max-w-2xl p-8">
@@ -83,11 +84,19 @@ export default async function PatientDetailPage({
         </ul>
       </section>
 
-      <NotesSection
-        patientId={id}
-        initialNotes={notes}
-        addNoteAction={addNote}
-      />
+      <section className="mt-10">
+        <h2 className="text-lg font-semibold">Notes</h2>
+        <div className="mt-4">
+          <NotesViewer
+            initialNotes={notes}
+            fixedPatientId={id}
+            userId={ctx.userId}
+            showAddForm
+            addNotePlaceholder="Add a clinical note..."
+            addNoteAction={addNote}
+          />
+        </div>
+      </section>
 
       <div className="mt-4">
         <Link
