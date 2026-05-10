@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { SunsetLogo } from "@/components/sunset-logo";
-import { SignOutButton } from "@/components/sign-out-button";
+import { PortalBackLink } from "@/components/portal-back-link";
 import { PractitionerTabs } from "./practitioner-tabs";
 import { practitioner } from "./data";
 
@@ -13,15 +13,22 @@ export default function PractitionerLayout({
     <div className="flex min-h-screen flex-1 flex-col bg-slate-50">
       <header className="border-b border-slate-200 bg-surface">
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-6 px-6 py-4">
-          <Link href="/" className="flex shrink-0 items-center gap-2">
-            <SunsetLogo gradientId="practitionerHeader" className="h-9 w-auto" />
-            <span className="text-lg font-bold tracking-wider text-slate-900">
-              SUNSET
-            </span>
-            <span className="hidden rounded bg-brand/10 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-brand sm:inline">
-              Clinician
-            </span>
-          </Link>
+          <div className="flex shrink-0 items-center gap-3">
+            <PortalBackLink href="/login" label="Back" />
+            <div className="h-8 w-px bg-slate-200" aria-hidden="true" />
+            <Link href="/" className="flex items-center gap-2">
+              <SunsetLogo
+                gradientId="practitionerHeader"
+                className="h-9 w-auto"
+              />
+              <span className="text-lg font-bold tracking-wider text-slate-900">
+                SUNSET
+              </span>
+              <span className="hidden rounded bg-brand/10 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-brand sm:inline">
+                Clinician
+              </span>
+            </Link>
+          </div>
 
           <div className="hidden flex-1 max-w-md md:block">
             <label className="relative flex items-center">
@@ -61,7 +68,6 @@ export default function PractitionerLayout({
             >
               {practitioner.initials}
             </div>
-            <SignOutButton />
           </div>
         </div>
 

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { SunsetLogo } from "@/components/sunset-logo";
-import { SignOutButton } from "@/components/sign-out-button";
+import { PortalBackLink } from "@/components/portal-back-link";
 import { FamilyTabs } from "./family-tabs";
 import { family, patient } from "./data";
 
@@ -13,12 +13,16 @@ export default function FamilyLayout({
     <div className="flex min-h-screen flex-1 flex-col bg-slate-50">
       <header className="border-b border-slate-200 bg-surface">
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-4">
-          <Link href="/" className="flex items-center gap-2">
-            <SunsetLogo gradientId="familyHeader" className="h-9 w-auto" />
-            <span className="text-lg font-bold tracking-wider text-slate-900">
-              SUNSET
-            </span>
-          </Link>
+          <div className="flex items-center gap-3">
+            <PortalBackLink href="/login" label="Back" />
+            <div className="h-8 w-px bg-slate-200" aria-hidden="true" />
+            <Link href="/" className="flex items-center gap-2">
+              <SunsetLogo gradientId="familyHeader" className="h-9 w-auto" />
+              <span className="text-lg font-bold tracking-wider text-slate-900">
+                SUNSET
+              </span>
+            </Link>
+          </div>
 
           <div className="flex flex-col items-center text-center">
             <span className="text-xs uppercase tracking-wide text-slate-500">
@@ -58,7 +62,6 @@ export default function FamilyLayout({
             >
               {family.initials}
             </div>
-            <SignOutButton />
           </div>
         </div>
 
