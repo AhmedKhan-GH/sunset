@@ -23,15 +23,7 @@ create index patient_notes_embedding_idx on public.patient_notes
 
 alter table public.patient_notes enable row level security;
 
--- Platform admin: full access to all notes
-create policy "platform admin can manage patient notes"
-  on public.patient_notes for all to authenticated
-  using (
-    (select role from public.profiles where user_id = auth.uid()) = 'platform_admin'
-  )
-  with check (
-    (select role from public.profiles where user_id = auth.uid()) = 'platform_admin'
-  );
+-- ── READ (SELECT) ──────────��──────────────────────────────────────────────────
 
 -- Organization admin: read all notes in their organization
 create policy "organization admin can read organization notes"
@@ -41,17 +33,12 @@ create policy "organization admin can read organization notes"
     and organization_id = (select organization_id from public.profiles where user_id = auth.uid())
   );
 
--- Practitioner: read and write notes within their organization
-create policy "practitioner can manage organization notes"
-  on public.patient_notes for all to authenticated
+-- Practitioner: read all notes within their organization
+create policy "practitioner can read organization notes"
+  on public.patient_notes for select to authenticated
   using (
     (select role from public.profiles where user_id = auth.uid()) = 'practitioner'
     and organization_id = (select organization_id from public.profiles where user_id = auth.uid())
-  )
-  with check (
-    (select role from public.profiles where user_id = auth.uid()) = 'practitioner'
-    and organization_id = (select organization_id from public.profiles where user_id = auth.uid())
-    and author_id = auth.uid()
   );
 
 -- Patient: read notes about themselves
@@ -68,6 +55,37 @@ create policy "relative can read linked patient notes"
   on public.patient_notes for select to authenticated
   using (
     patient_id in (
+      select patient_id from public.relatives where user_id = auth.uid()
+    )
+  );
+
+-- ── WRITE (INSERT only — append-only clinical record) ─���───────────────────────
+
+-- Practitioner: add notes about any patient in their organization
+create policy "practitioner can insert organization notes"
+  on public.patient_notes for insert to authenticated
+  with check (
+    (select role from public.profiles where user_id = auth.uid()) = 'practitioner'
+    and organization_id = (select organization_id from public.profiles where user_id = auth.uid())
+    and author_id = auth.uid()
+  );
+
+-- Patient: add notes about themselves
+create policy "patient can insert own notes"
+  on public.patient_notes for insert to authenticated
+  with check (
+    author_id = auth.uid()
+    and patient_id in (
+      select id from public.patients where user_id = auth.uid()
+    )
+  );
+
+-- Relative: add notes about their linked patient
+create policy "relative can insert linked patient notes"
+  on public.patient_notes for insert to authenticated
+  with check (
+    author_id = auth.uid()
+    and patient_id in (
       select patient_id from public.relatives where user_id = auth.uid()
     )
   );
