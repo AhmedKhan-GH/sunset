@@ -4,6 +4,7 @@ import { register } from "./actions";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Link from "next/link";
+import { SunsetLogo } from "@/components/sunset-logo";
 
 export default function RegisterPage() {
   const [email, setEmail] = useState("");
@@ -43,10 +44,11 @@ export default function RegisterPage() {
 
   if (success) {
     return (
-      <div className="flex flex-1 items-center justify-center">
+      <div className="flex flex-1 items-center justify-center bg-background">
         <div className="w-full max-w-sm p-8 text-center">
-          <h1 className="text-2xl font-semibold">Account ready</h1>
-          <p className="mt-2 text-sm text-zinc-500">
+          <SunsetLogo className="mx-auto h-16 w-auto" gradientId="successLogo" />
+          <h1 className="mt-4 text-2xl font-semibold">Account ready</h1>
+          <p className="mt-2 text-sm text-muted-foreground">
             Redirecting to sign in...
           </p>
         </div>
@@ -54,19 +56,29 @@ export default function RegisterPage() {
     );
   }
 
+  const inputClasses =
+    "w-full rounded-lg border border-border bg-surface px-4 py-3 text-base text-foreground placeholder:text-muted-foreground focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand-soft";
+
   return (
-    <div className="flex flex-1 items-center justify-center">
+    <div className="flex flex-1 items-center justify-center bg-background">
       <form
         onSubmit={handleSubmit}
         className="flex w-full max-w-sm flex-col gap-4 p-8"
       >
-        <h1 className="text-2xl font-semibold">Register</h1>
-        <p className="text-sm text-zinc-500">
-          Set up your login credentials. Your email must already be on file with
-          your care team.
-        </p>
+        <div className="flex flex-col items-center gap-2 pb-2">
+          <SunsetLogo className="h-16 w-auto" gradientId="registerLogo" />
+          <h1 className="text-2xl font-bold tracking-tight">Register</h1>
+          <p className="text-center text-sm text-muted-foreground">
+            Set up your login credentials. Your email must already be on file
+            with your care team.
+          </p>
+        </div>
 
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && (
+          <p className="rounded-lg bg-status-urgent/10 px-4 py-3 text-sm text-status-urgent" role="alert">
+            {error}
+          </p>
+        )}
 
         <label className="flex flex-col gap-1">
           <span className="text-sm font-medium">Email</span>
@@ -75,7 +87,7 @@ export default function RegisterPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            className="rounded border px-3 py-2"
+            className={inputClasses}
           />
         </label>
 
@@ -87,7 +99,7 @@ export default function RegisterPage() {
             onChange={(e) => setPassword(e.target.value)}
             required
             minLength={6}
-            className="rounded border px-3 py-2"
+            className={inputClasses}
           />
         </label>
 
@@ -99,21 +111,21 @@ export default function RegisterPage() {
             onChange={(e) => setConfirm(e.target.value)}
             required
             minLength={6}
-            className="rounded border px-3 py-2"
+            className={inputClasses}
           />
         </label>
 
         <button
           type="submit"
           disabled={loading}
-          className="rounded bg-black px-4 py-2 text-white disabled:opacity-50 dark:bg-white dark:text-black"
+          className="rounded-xl bg-brand px-5 py-3 text-base font-semibold text-white transition hover:brightness-110 disabled:opacity-50"
         >
           {loading ? "Registering..." : "Register"}
         </button>
 
-        <p className="text-center text-sm text-zinc-500">
+        <p className="text-center text-sm text-muted-foreground">
           Already have credentials?{" "}
-          <Link href="/" className="underline">
+          <Link href="/" className="font-medium text-brand hover:underline">
             Sign in
           </Link>
         </p>
