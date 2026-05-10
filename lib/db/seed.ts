@@ -69,33 +69,53 @@ async function seed() {
 
   console.log("\nenabling realtime + audit triggers");
   await client.unsafe(`
-    alter publication supabase_realtime add table public.patient_notes;
+    do $$ begin
+      if not exists (
+        select 1 from pg_publication_tables
+        where pubname = 'supabase_realtime' and tablename = 'patient_notes'
+      ) then
+        alter publication supabase_realtime add table public.patient_notes;
+      end if;
+    end $$;
     alter table public.patient_notes replica identity full;
 
 
+    drop trigger if exists audit_patient_notes_insert on public.patient_notes;
     create trigger audit_patient_notes_insert
       after insert on public.patient_notes
       for each row execute function audit.log_change('note.created');
 
+    drop trigger if exists audit_patients_insert on public.patients;
     create trigger audit_patients_insert
       after insert on public.patients
       for each row execute function audit.log_change('patient.created');
 
+    drop trigger if exists audit_patients_update on public.patients;
     create trigger audit_patients_update
       after update on public.patients
       for each row execute function audit.log_change('patient.updated');
 
+    drop trigger if exists audit_relatives_insert on public.relatives;
     create trigger audit_relatives_insert
       after insert on public.relatives
       for each row execute function audit.log_change('relative.added');
 
+    drop trigger if exists audit_relatives_delete on public.relatives;
     create trigger audit_relatives_delete
       after delete on public.relatives
       for each row execute function audit.log_change('relative.removed');
 
+    drop trigger if exists audit_practitioners_insert on public.practitioners;
     create trigger audit_practitioners_insert
       after insert on public.practitioners
       for each row execute function audit.log_change('practitioner.added');
+
+    -- invite_codes policy that references profiles (created by Drizzle above)
+    drop policy if exists "platform admin can manage all invite codes" on public.invite_codes;
+    create policy "platform admin can manage all invite codes"
+      on public.invite_codes for all to authenticated
+      using ((select role from profiles where user_id = auth.uid()) = 'platform_admin')
+      with check ((select role from profiles where user_id = auth.uid()) = 'platform_admin');
   `);
 
   // ── Platform admin ──────────────────────────────────────────────────────
@@ -125,6 +145,7 @@ async function seed() {
   console.log("\norganization admins");
   const sunriseAdminId = await getOrCreateAuthUser(
     "maria.santos@sunset.dev",
+    "demo123",
   );
   await db.insert(profiles).values({
     userId: sunriseAdminId,
@@ -135,6 +156,7 @@ async function seed() {
 
   const harborAdminId = await getOrCreateAuthUser(
     "david.chen@sunset.dev",
+    "demo123",
   );
   await db.insert(profiles).values({
     userId: harborAdminId,
@@ -174,7 +196,7 @@ async function seed() {
   const practitionerRecords: Record<string, string> = {};
   const practitionerUserIds: Record<string, string> = {};
   for (const p of practitionerData) {
-    const userId = await getOrCreateAuthUser(p.email);
+    const userId = await getOrCreateAuthUser(p.email, "demo123");
     await db.insert(profiles).values({
       userId,
       name: p.name,
@@ -278,7 +300,7 @@ async function seed() {
   const patientRecords: Record<string, string> = {};
   for (const p of patientData) {
     const userId = p.email
-      ? await getOrCreateAuthUser(p.email)
+      ? await getOrCreateAuthUser(p.email, "demo123")
       : undefined;
 
     if (userId) {
@@ -398,7 +420,7 @@ async function seed() {
 
   for (const r of relativeData) {
     const userId = r.email
-      ? await getOrCreateAuthUser(r.email)
+      ? await getOrCreateAuthUser(r.email, "demo123")
       : undefined;
 
     if (userId) {
