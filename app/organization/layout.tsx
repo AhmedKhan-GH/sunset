@@ -1,5 +1,6 @@
-import Link from "next/link";
 import { NavLink } from "@/components/nav-link";
+import { SignOutButton } from "@/components/sign-out-button";
+import { SunsetLogo } from "@/components/sunset-logo";
 import { createClient } from "@/lib/supabase/server";
 import { db } from "@/lib/db";
 import { profiles, organizations } from "@/lib/db/schema";
@@ -42,52 +43,56 @@ export default async function OrganizationLayout({
     : [];
 
   const isOrganizationAdmin = profile.role === "organization_admin";
+  const initials = (profile.name ?? user.email ?? "U")
+    .split(" ")
+    .map((w) => w[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
 
   return (
-    <div className="flex min-h-full flex-col">
-      <header className="flex items-center justify-between border-b px-6 py-3">
-        <div className="flex items-center gap-6">
-          <span className="font-semibold">Sunset</span>
-          {organization && (
-            <span className="text-sm text-zinc-500">{organization.name}</span>
-          )}
-          <nav className="flex gap-4 text-sm">
+    <div className="flex min-h-full flex-col bg-background">
+      <header className="border-b border-slate-200 bg-surface">
+        <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-6 px-6 py-3">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <SunsetLogo className="h-8 w-auto" gradientId="orgHeader" />
+              <span className="text-sm font-bold tracking-tight">SUNSET</span>
+            </div>
+            {organization && (
+              <span className="text-sm text-muted-foreground">
+                {organization.name}
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-4">
+            <span className="text-xs capitalize text-muted-foreground">
+              {profile.role.replaceAll("_", " ")}
+            </span>
+            <span className="text-sm font-medium">{profile.name}</span>
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-brand text-xs font-semibold text-white">
+              {initials}
+            </div>
+            <SignOutButton action={signOut} />
+          </div>
+        </div>
+        <div className="mx-auto flex w-full max-w-6xl px-6">
+          <nav className="flex gap-1">
             {isOrganizationAdmin && (
               <NavLink href="/organization" exact>
                 Practitioners
               </NavLink>
             )}
-            <NavLink href="/organization/patients">
-              Patients
-            </NavLink>
-            <NavLink href="/organization/notes">
-              Notes
-            </NavLink>
-            <NavLink href="/organization/chat">
-              Chat
-            </NavLink>
+            <NavLink href="/organization/patients">Patients</NavLink>
+            <NavLink href="/organization/notes">Notes</NavLink>
+            <NavLink href="/organization/chat">Chat</NavLink>
             {isOrganizationAdmin && (
-              <NavLink href="/organization/audit">
-                Audit
-              </NavLink>
+              <NavLink href="/organization/audit">Audit</NavLink>
             )}
             {isOrganizationAdmin && (
-              <NavLink href="/organization/settings">
-                Settings
-              </NavLink>
+              <NavLink href="/organization/settings">Settings</NavLink>
             )}
           </nav>
-        </div>
-        <div className="flex items-center gap-4 text-sm">
-          <span className="text-zinc-500">{user.email}</span>
-          <span className="text-zinc-400 capitalize">
-            {profile.role.replaceAll("_", " ")}
-          </span>
-          <form action={signOut}>
-            <button type="submit" className="hover:underline">
-              Sign out
-            </button>
-          </form>
         </div>
       </header>
       <main className="flex-1">{children}</main>
