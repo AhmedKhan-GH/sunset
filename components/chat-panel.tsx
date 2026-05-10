@@ -275,50 +275,67 @@ function ChatMessages({
         )}
 
         <div className="flex flex-col gap-4">
-          {messages.map((m) => (
-            <div
-              key={m.id}
-              className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
-            >
+          {messages.map((m) => {
+            const hasText = m.parts.some(
+              (p: Record<string, unknown>) => p.type === "text" && (p.text as string),
+            );
+
+            return (
               <div
-                className={`max-w-[80%] rounded-lg px-4 py-2 text-sm whitespace-pre-wrap ${
-                  m.role === "user"
-                    ? "bg-black text-white dark:bg-white dark:text-black"
-                    : "bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100"
-                }`}
+                key={m.id}
+                className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
               >
-                {m.parts.map((p: Record<string, unknown>, i: number) => {
-                  if (p.type === "text") {
-                    return <span key={i}>{p.text as string}</span>;
-                  }
-                  if (p.type === "tool-sendNotification" && p.state === "output-available") {
-                    const { title, message } = p.output as { success: boolean; title: string; message: string };
-                    return (
-                      <div key={i} className="my-1 rounded border border-green-300 bg-green-50 px-3 py-2 dark:border-green-700 dark:bg-green-950">
-                        <p className="font-medium text-green-900 dark:text-green-100">{title}</p>
-                        <p className="text-green-700 dark:text-green-300">{message}</p>
-                      </div>
-                    );
-                  }
-                  return null;
-                })}
+                <div
+                  className={`max-w-[80%] rounded-lg px-4 py-2 text-sm whitespace-pre-wrap ${
+                    m.role === "user"
+                      ? "bg-black text-white dark:bg-white dark:text-black"
+                      : "bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100"
+                  }`}
+                >
+                  {!hasText && m.role === "assistant" && isLoading ? (
+                    <span className="text-zinc-400">
+                      Thinking
+                      <span className="inline-flex w-4">
+                        <span className="animate-pulse">.</span>
+                        <span className="animate-pulse delay-200">.</span>
+                        <span className="animate-pulse delay-400">.</span>
+                      </span>
+                    </span>
+                  ) : (
+                    m.parts.map((p: Record<string, unknown>, i: number) => {
+                      if (p.type === "text") {
+                        return <span key={i}>{p.text as string}</span>;
+                      }
+                      if (p.type === "tool-sendNotification" && p.state === "output-available") {
+                        const { title, message } = p.output as { success: boolean; title: string; message: string };
+                        return (
+                          <div key={i} className="my-1 rounded border border-green-300 bg-green-50 px-3 py-2 dark:border-green-700 dark:bg-green-950">
+                            <p className="font-medium text-green-900 dark:text-green-100">{title}</p>
+                            <p className="text-green-700 dark:text-green-300">{message}</p>
+                          </div>
+                        );
+                      }
+                      return null;
+                    })
+                  )}
+                </div>
+              </div>
+            );
+          })}
+
+          {status === "submitted" && !messages.some((m) => m.role === "assistant") && (
+            <div className="flex justify-start">
+              <div className="rounded-lg bg-zinc-100 px-4 py-2 text-sm text-zinc-400 dark:bg-zinc-800">
+                Thinking
+                <span className="inline-flex w-4">
+                  <span className="animate-pulse">.</span>
+                  <span className="animate-pulse delay-200">.</span>
+                  <span className="animate-pulse delay-400">.</span>
+                </span>
               </div>
             </div>
-          ))}
+          )}
         </div>
-
-        {status === "submitted" && (
-          <div className="flex justify-start">
-            <div className="rounded-lg bg-zinc-100 px-4 py-2 text-sm text-zinc-400 dark:bg-zinc-800">
-              Thinking
-              <span className="inline-flex w-4">
-                <span className="animate-pulse">.</span>
-                <span className="animate-pulse delay-200">.</span>
-                <span className="animate-pulse delay-400">.</span>
-              </span>
-            </div>
-          </div>
-        )}
 
         {error && (
           <p className="mt-4 text-sm text-red-500">
