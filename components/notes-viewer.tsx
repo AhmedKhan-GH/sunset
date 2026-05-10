@@ -201,7 +201,7 @@ export function NotesViewer({
 
       <input
         type="text"
-        placeholder={searchMode === "semantic" ? "Search notes semantically..." : "Exact keyword match (case-insensitive)..."}
+        placeholder={searchMode === "semantic" ? "Include — finds notes with similar meaning" : "Exact — case-insensitive substring match"}
         value={searchQuery}
         onChange={(e) => handleSearch(e.target.value)}
         className="rounded border px-3 py-2 text-sm"
@@ -210,7 +210,7 @@ export function NotesViewer({
       {searchMode === "semantic" && (
         <input
           type="text"
-          placeholder="Filter out (e.g. 'morning routine' to exclude morning observations)..."
+          placeholder="Exclude — demotes notes with similar meaning"
           value={filterOut}
           onChange={(e) => handleFilterOut(e.target.value)}
           className="rounded border px-3 py-2 text-sm"
@@ -220,7 +220,7 @@ export function NotesViewer({
       {searchMode === "keyword" && (
         <input
           type="text"
-          placeholder="Fuzzy match (tolerates typos, e.g. 'morpine' finds 'morphine')..."
+          placeholder="Fuzzy — tolerates typos and misspellings"
           value={fuzzy}
           onChange={(e) => handleFuzzy(e.target.value)}
           className="rounded border px-3 py-2 text-sm"
