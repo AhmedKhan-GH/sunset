@@ -24,44 +24,67 @@ export function LiveFeed({ initialOrgs }: { initialOrgs: Org[] }) {
 
   useEffect(() => {
     const supabase = createClient();
-    const channel = supabase
-      .channel("admin-live-orgs")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "organizations" },
-        (payload) => {
-          const row = (payload.new ?? payload.old) as Org;
-          setEvents((prev) =>
-            [
-              {
-                id: crypto.randomUUID(),
-                time: new Date().toLocaleTimeString(),
-                type: payload.eventType as Event["type"],
-                name: row?.name ?? "(unknown)",
-              },
-              ...prev,
-            ].slice(0, 20),
-          );
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    let cancelled = false;
 
-          if (payload.eventType === "INSERT") {
-            setOrgs((prev) => [...prev, payload.new as Org]);
-          } else if (payload.eventType === "UPDATE") {
-            setOrgs((prev) =>
-              prev.map((o) =>
-                o.id === (payload.new as Org).id ? (payload.new as Org) : o,
-              ),
+    (async () => {
+      // ─── THIS IS WHAT MAKES REALTIME WORK FOR COOKIE-BACKED SESSIONS ──
+      // The browser client hydrates the session from cookies, but the
+      // realtime sub-client doesn't always have the JWT pinned by the
+      // time we subscribe. Without the JWT, the channel connects as anon
+      // and RLS hides every event. Pull the session and call setAuth
+      // before subscribing to guarantee the JWT is attached.
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (cancelled) return;
+      if (!session) {
+        setStatus("no session");
+        return;
+      }
+      await supabase.realtime.setAuth(session.access_token);
+      // ──────────────────────────────────────────────────────────────────
+
+      channel = supabase
+        .channel("admin-live-orgs")
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "organizations" },
+          (payload) => {
+            const row = (payload.new ?? payload.old) as Org;
+            setEvents((prev) =>
+              [
+                {
+                  id: crypto.randomUUID(),
+                  time: new Date().toLocaleTimeString(),
+                  type: payload.eventType as Event["type"],
+                  name: row?.name ?? "(unknown)",
+                },
+                ...prev,
+              ].slice(0, 20),
             );
-          } else if (payload.eventType === "DELETE") {
-            setOrgs((prev) =>
-              prev.filter((o) => o.id !== (payload.old as Org).id),
-            );
-          }
-        },
-      )
-      .subscribe((s) => setStatus(s));
+
+            if (payload.eventType === "INSERT") {
+              setOrgs((prev) => [...prev, payload.new as Org]);
+            } else if (payload.eventType === "UPDATE") {
+              setOrgs((prev) =>
+                prev.map((o) =>
+                  o.id === (payload.new as Org).id ? (payload.new as Org) : o,
+                ),
+              );
+            } else if (payload.eventType === "DELETE") {
+              setOrgs((prev) =>
+                prev.filter((o) => o.id !== (payload.old as Org).id),
+              );
+            }
+          },
+        )
+        .subscribe((s) => setStatus(s));
+    })();
 
     return () => {
-      supabase.removeChannel(channel);
+      cancelled = true;
+      if (channel) supabase.removeChannel(channel);
     };
   }, []);
 
