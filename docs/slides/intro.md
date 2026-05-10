@@ -164,7 +164,7 @@ layout: default
 <div class="relative h-full grid grid-rows-[auto_1fr_auto] px-16 py-10 z-10">
 
 <div class="flex flex-col justify-center max-w-[60%] -mt-6">
-<div class="text-[2.6rem] leading-[1.1] font-semibold tracking-tight text-[#1f2937] mb-4">A Quiet Crisis in <br />Hospice Care</div>
+<div class="text-[2.6rem] leading-[1.1] font-semibold tracking-tight text-[#1f2937] mb-4">A quiet crisis in <br />hospice care</div>
 <div class="text-[1.05rem] leading-relaxed text-[#1f2937]/65 font-medium mb-10" style="max-width: 44ch;">Healthcare practitioners spend more time on paperwork than at the bedside, leading to neglect near the end of patient life.</div>
 <div class="grid grid-cols-3 gap-5" style="max-width: 44rem;"><div class="px-5 py-4 rounded-2xl bg-white/55 backdrop-blur border border-white/70"><div class="text-[1.9rem] font-extrabold text-[#1f2937] leading-none">1.7M</div><div class="mt-2 text-[0.78rem] text-[#1f2937]/65 leading-snug">Americans receive hospice care each year</div></div><div class="px-5 py-4 rounded-2xl bg-white/55 backdrop-blur border border-white/70"><div class="text-[1.9rem] font-extrabold text-[#1f2937] leading-none">60%</div><div class="mt-2 text-[0.78rem] text-[#1f2937]/65 leading-snug">of clinician time goes to documentation</div></div><div class="px-5 py-4 rounded-2xl bg-white/55 backdrop-blur border border-white/70"><div class="text-[1.9rem] font-extrabold text-[#1f2937] leading-none">$10B+</div><div class="mt-2 text-[0.78rem] text-[#1f2937]/65 leading-snug">lost annually to admin overhead</div></div></div>
 </div>
