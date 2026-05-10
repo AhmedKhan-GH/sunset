@@ -215,7 +215,7 @@ layout: default
 ---
 
 <div class="absolute inset-0 overflow-hidden pointer-events-none">
-  <div class="absolute w-[200px] h-[200px] rounded-full" style="top: 7%; left: 50%; transform: translateX(-50%); background: linear-gradient(135deg, #fbbf24 0%, #f472b6 55%, #a78bfa 100%); opacity: 0.85; box-shadow: 0 0 10px 4px rgba(124,110,166,0.6), 0 0 22px 10px rgba(255,255,255,0.9), 0 0 60px 28px rgba(255,255,255,0.45);" />
+  <div class="absolute w-[200px] h-[200px] rounded-full" style="top: 6%; left: 6%; background: linear-gradient(135deg, #fbbf24 0%, #f472b6 55%, #a78bfa 100%); opacity: 0.85; box-shadow: 0 0 10px 4px rgba(124,110,166,0.6), 0 0 22px 10px rgba(255,255,255,0.9), 0 0 60px 28px rgba(255,255,255,0.45);" />
   <div class="absolute -top-32 -right-32 w-[420px] h-[420px] rounded-full opacity-22 blur-3xl" style="background: radial-gradient(circle, #fbbf24 0%, #f472b6 50%, transparent 80%);" />
   <div class="absolute -bottom-32 -left-32 w-[420px] h-[420px] rounded-full opacity-20 blur-3xl" style="background: radial-gradient(circle, #a78bfa 0%, transparent 70%);" />
   <svg class="absolute bottom-0 left-0 w-full" viewBox="0 0 1280 220" preserveAspectRatio="none" style="height: 18%; overflow: visible;">
@@ -288,7 +288,7 @@ layout: default
 ---
 
 <div class="absolute inset-0 overflow-hidden pointer-events-none">
-  <div class="absolute w-[200px] h-[200px] rounded-full" style="top: 6%; left: 6%; background: linear-gradient(135deg, #fbbf24 0%, #f472b6 55%, #a78bfa 100%); opacity: 0.85; box-shadow: 0 0 10px 4px rgba(124,110,166,0.6), 0 0 22px 10px rgba(255,255,255,0.9), 0 0 60px 28px rgba(255,255,255,0.45);" />
+  <div class="absolute w-[200px] h-[200px] rounded-full" style="top: 7%; left: 50%; transform: translateX(-50%); background: linear-gradient(135deg, #fbbf24 0%, #f472b6 55%, #a78bfa 100%); opacity: 0.85; box-shadow: 0 0 10px 4px rgba(124,110,166,0.6), 0 0 22px 10px rgba(255,255,255,0.9), 0 0 60px 28px rgba(255,255,255,0.45);" />
   <div class="absolute -top-32 -right-32 w-[420px] h-[420px] rounded-full opacity-22 blur-3xl" style="background: radial-gradient(circle, #fbbf24 0%, #f472b6 50%, transparent 80%);" />
   <div class="absolute -bottom-32 -left-32 w-[420px] h-[420px] rounded-full opacity-20 blur-3xl" style="background: radial-gradient(circle, #a78bfa 0%, transparent 70%);" />
   <svg class="absolute bottom-0 left-0 w-full" viewBox="0 0 1280 220" preserveAspectRatio="none" style="height: 18%; overflow: visible;">
