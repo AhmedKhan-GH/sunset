@@ -1,7 +1,7 @@
 -- Patient notes: clinical observations written by practitioners,
 -- scoped to organization, searchable via pgvector embeddings.
 
-create table public.patient_notes (
+create table if not exists public.patient_notes (
   id          uuid primary key default gen_random_uuid(),
   organization_id uuid not null references public.organizations(id) on delete cascade,
   patient_id  uuid not null references public.patients(id) on delete cascade,
@@ -13,19 +13,20 @@ create table public.patient_notes (
 );
 
 -- Indexes for common access patterns
-create index patient_notes_org_idx on public.patient_notes (organization_id);
-create index patient_notes_patient_idx on public.patient_notes (patient_id, created_at desc);
-create index patient_notes_author_idx on public.patient_notes (author_id, created_at desc);
+create index if not exists patient_notes_org_idx on public.patient_notes (organization_id);
+create index if not exists patient_notes_patient_idx on public.patient_notes (patient_id, created_at desc);
+create index if not exists patient_notes_author_idx on public.patient_notes (author_id, created_at desc);
 
 -- HNSW index for semantic search (cosine distance)
-create index patient_notes_embedding_idx on public.patient_notes
+create index if not exists patient_notes_embedding_idx on public.patient_notes
   using hnsw (embedding vector_cosine_ops);
 
 alter table public.patient_notes enable row level security;
 
--- ── READ (SELECT) ──────────��──────────────────────────────────────────────────
+-- ── READ (SELECT) ─────────────────────────────────────────────────────────────
 
 -- Organization admin: read all notes in their organization
+drop policy if exists "organization admin can read organization notes" on public.patient_notes;
 create policy "organization admin can read organization notes"
   on public.patient_notes for select to authenticated
   using (
@@ -34,6 +35,7 @@ create policy "organization admin can read organization notes"
   );
 
 -- Practitioner: read all notes within their organization
+drop policy if exists "practitioner can read organization notes" on public.patient_notes;
 create policy "practitioner can read organization notes"
   on public.patient_notes for select to authenticated
   using (
@@ -42,6 +44,7 @@ create policy "practitioner can read organization notes"
   );
 
 -- Patient: read notes about themselves
+drop policy if exists "patient can read own notes" on public.patient_notes;
 create policy "patient can read own notes"
   on public.patient_notes for select to authenticated
   using (
@@ -51,6 +54,7 @@ create policy "patient can read own notes"
   );
 
 -- Relative: read notes for the patient they are linked to
+drop policy if exists "relative can read linked patient notes" on public.patient_notes;
 create policy "relative can read linked patient notes"
   on public.patient_notes for select to authenticated
   using (
@@ -59,9 +63,10 @@ create policy "relative can read linked patient notes"
     )
   );
 
--- ── WRITE (INSERT only — append-only clinical record) ─���───────────────────────
+-- ── WRITE (INSERT only — append-only clinical record) ─────────────────────────
 
 -- Practitioner: add notes about any patient in their organization
+drop policy if exists "practitioner can insert organization notes" on public.patient_notes;
 create policy "practitioner can insert organization notes"
   on public.patient_notes for insert to authenticated
   with check (
@@ -71,6 +76,7 @@ create policy "practitioner can insert organization notes"
   );
 
 -- Patient: add notes about themselves
+drop policy if exists "patient can insert own notes" on public.patient_notes;
 create policy "patient can insert own notes"
   on public.patient_notes for insert to authenticated
   with check (
@@ -81,6 +87,7 @@ create policy "patient can insert own notes"
   );
 
 -- Relative: add notes about their linked patient
+drop policy if exists "relative can insert linked patient notes" on public.patient_notes;
 create policy "relative can insert linked patient notes"
   on public.patient_notes for insert to authenticated
   with check (

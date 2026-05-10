@@ -1,4 +1,5 @@
 import dotenv from "dotenv";
+import fs from "fs";
 import postgres from "postgres";
 import { drizzle } from "drizzle-orm/postgres-js";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
@@ -50,8 +51,12 @@ async function getOrCreateAuthUser(
 }
 
 async function seed() {
-  console.log("\nrunning migrations");
+  console.log("\nrunning drizzle migrations");
   await migrate(db, { migrationsFolder: "./drizzle" });
+
+  console.log("\ncreating patient_notes table");
+  const patientNotesSql = fs.readFileSync("./supabase/snippets/patient_notes.sql", "utf8");
+  await client.unsafe(patientNotesSql);
 
   // ── Platform admin ──────────────────────────────────────────────────────
   console.log("\nplatform admin");
