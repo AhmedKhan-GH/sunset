@@ -21,6 +21,10 @@ create index if not exists patient_notes_author_idx on public.patient_notes (aut
 create index if not exists patient_notes_embedding_idx on public.patient_notes
   using hnsw (embedding vector_cosine_ops);
 
+-- GIN trigram index for fuzzy text search
+create index if not exists patient_notes_content_trgm_idx on public.patient_notes
+  using gin (content gin_trgm_ops);
+
 alter table public.patient_notes enable row level security;
 
 -- ── READ (SELECT) ─────────────────────────────────────────────────────────────

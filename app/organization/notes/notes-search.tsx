@@ -16,6 +16,7 @@ type Note = {
   createdAt: string;
   similarity?: number;
   filteredSimilarity?: number;
+  fuzzyScore?: number;
 };
 
 type Patient = {
@@ -35,19 +36,24 @@ export function NotesSearch({
   const [notes, setNotes] = useState(initialNotes);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterOut, setFilterOut] = useState("");
+  const [fuzzy, setFuzzy] = useState("");
   const [searchMode, setSearchMode] = useState<"semantic" | "keyword">("semantic");
   const [searchResults, setSearchResults] = useState<Note[] | null>(null);
   const [selectedPatientId, setSelectedPatientId] = useState(initialPatientId ?? "");
   const [isSearching, startSearch] = useTransition();
 
-  function runSearch(query: string, filter: string, patientId: string, mode: "semantic" | "keyword") {
-    if (!query.trim()) {
+  function runSearch(query: string, filter: string, fuzzyVal: string, patientId: string, mode: "semantic" | "keyword") {
+    if (!query.trim() && !(mode === "keyword" && fuzzyVal.trim())) {
       setSearchResults(null);
       return;
     }
     startSearch(async () => {
       if (mode === "keyword") {
-        const results = await keywordSearchOrganizationNotes(query, patientId || undefined);
+        const results = await keywordSearchOrganizationNotes(
+          query,
+          patientId || undefined,
+          fuzzyVal.trim() ? fuzzyVal : undefined,
+        );
         setSearchResults(results);
       } else {
         const results = await searchOrganizationNotes(
@@ -62,28 +68,34 @@ export function NotesSearch({
 
   function handleSearch(query: string) {
     setSearchQuery(query);
-    runSearch(query, filterOut, selectedPatientId, searchMode);
+    runSearch(query, filterOut, fuzzy, selectedPatientId, searchMode);
   }
 
   function handleFilterOut(filter: string) {
     setFilterOut(filter);
     if (searchQuery.trim()) {
-      runSearch(searchQuery, filter, selectedPatientId, searchMode);
+      runSearch(searchQuery, filter, fuzzy, selectedPatientId, searchMode);
     }
+  }
+
+  function handleFuzzy(val: string) {
+    setFuzzy(val);
+    runSearch(searchQuery, filterOut, val, selectedPatientId, searchMode);
   }
 
   function handleModeToggle(mode: "semantic" | "keyword") {
     setSearchMode(mode);
     setFilterOut("");
+    setFuzzy("");
     if (searchQuery.trim()) {
-      runSearch(searchQuery, "", selectedPatientId, mode);
+      runSearch(searchQuery, "", "", selectedPatientId, mode);
     }
   }
 
   function handlePatientFilter(patientId: string) {
     setSelectedPatientId(patientId);
-    if (searchQuery.trim()) {
-      runSearch(searchQuery, filterOut, patientId, searchMode);
+    if (searchQuery.trim() || (searchMode === "keyword" && fuzzy.trim())) {
+      runSearch(searchQuery, filterOut, fuzzy, patientId, searchMode);
     } else {
       startSearch(async () => {
         const filtered = await getOrganizationNotes(patientId || undefined);
@@ -97,6 +109,19 @@ export function NotesSearch({
 
   return (
     <div className="flex flex-col gap-4">
+      <select
+        value={selectedPatientId}
+        onChange={(e) => handlePatientFilter(e.target.value)}
+        className="rounded border px-3 py-2 text-sm"
+      >
+        <option value="">All patients</option>
+        {patients.map((p) => (
+          <option key={p.id} value={p.id}>
+            {p.name}
+          </option>
+        ))}
+      </select>
+
       <div className="flex gap-2 text-sm">
         <button
           onClick={() => handleModeToggle("semantic")}
@@ -112,27 +137,13 @@ export function NotesSearch({
         </button>
       </div>
 
-      <div className="flex gap-3">
-        <input
-          type="text"
-          placeholder={searchMode === "semantic" ? "Search notes semantically..." : "Search notes by keyword..."}
-          value={searchQuery}
-          onChange={(e) => handleSearch(e.target.value)}
-          className="flex-1 rounded border px-3 py-2 text-sm"
-        />
-        <select
-          value={selectedPatientId}
-          onChange={(e) => handlePatientFilter(e.target.value)}
-          className="rounded border px-3 py-2 text-sm"
-        >
-          <option value="">All patients</option>
-          {patients.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.name}
-            </option>
-          ))}
-        </select>
-      </div>
+      <input
+        type="text"
+        placeholder={searchMode === "semantic" ? "Search notes semantically..." : "Exact keyword match (case-insensitive)..."}
+        value={searchQuery}
+        onChange={(e) => handleSearch(e.target.value)}
+        className="rounded border px-3 py-2 text-sm"
+      />
 
       {searchMode === "semantic" && (
         <input
@@ -140,6 +151,16 @@ export function NotesSearch({
           placeholder="Filter out (e.g. 'morning routine' to exclude morning observations)..."
           value={filterOut}
           onChange={(e) => handleFilterOut(e.target.value)}
+          className="rounded border px-3 py-2 text-sm"
+        />
+      )}
+
+      {searchMode === "keyword" && (
+        <input
+          type="text"
+          placeholder="Fuzzy match (tolerates typos, e.g. 'morpine' finds 'morphine')..."
+          value={fuzzy}
+          onChange={(e) => handleFuzzy(e.target.value)}
           className="rounded border px-3 py-2 text-sm"
         />
       )}
@@ -152,6 +173,7 @@ export function NotesSearch({
           onClick={() => {
             setSearchQuery("");
             setFilterOut("");
+            setFuzzy("");
             setSearchResults(null);
           }}
           className="self-start text-xs text-zinc-400 hover:underline"
@@ -164,7 +186,7 @@ export function NotesSearch({
         {displayNotes.map((note) => (
           <li key={note.id} className="rounded border px-4 py-3">
             <p className="whitespace-pre-wrap text-sm">{note.content}</p>
-            <div className="mt-2 flex items-center gap-3 text-xs text-zinc-400">
+            <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-zinc-400">
               <Link
                 href={`/organization/patients/${note.patientId}`}
                 className="font-medium text-zinc-600 hover:underline dark:text-zinc-300"
@@ -180,6 +202,11 @@ export function NotesSearch({
               {note.filteredSimilarity != null && (
                 <span className="rounded bg-red-50 px-1.5 py-0.5 text-red-600 dark:bg-red-900/30 dark:text-red-400">
                   {(note.filteredSimilarity * 100).toFixed(0)}% filter
+                </span>
+              )}
+              {note.fuzzyScore != null && (
+                <span className="rounded bg-amber-50 px-1.5 py-0.5 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                  {(note.fuzzyScore * 100).toFixed(0)}% fuzzy
                 </span>
               )}
             </div>

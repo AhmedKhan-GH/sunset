@@ -159,20 +159,34 @@ export async function searchPatientNotes(
 export async function keywordSearchPatientNotes(
   patientId: string,
   keyword: string,
+  fuzzy?: string,
 ) {
   const { profile } = await requireNoteAccess(patientId);
 
-  if (!keyword.trim()) return [];
+  if (!keyword.trim() && !fuzzy?.trim()) return [];
 
-  const pattern = `%${keyword.trim()}%`;
+  const keywordFilter = keyword.trim()
+    ? sql`and content ilike ${`%${keyword.trim()}%`}`
+    : sql``;
+
+  const fuzzyTerm = fuzzy?.trim() ?? "";
+  const fuzzyFilter = fuzzyTerm
+    ? sql`and ${fuzzyTerm} <% content`
+    : sql``;
+
+  const orderClause = fuzzyTerm
+    ? sql`order by word_similarity(${fuzzyTerm}, content) desc`
+    : sql`order by created_at desc`;
 
   const results = await sql`
     select id, content, created_at
+      ${fuzzyTerm ? sql`, word_similarity(${fuzzyTerm}, content)::float as fuzzy_score` : sql``}
     from public.patient_notes
     where patient_id = ${patientId}
       and organization_id = ${profile.organizationId}
-      and content ilike ${pattern}
-    order by created_at desc
+      ${keywordFilter}
+      ${fuzzyFilter}
+    ${orderClause}
     limit 10
   `;
 
@@ -180,5 +194,6 @@ export async function keywordSearchPatientNotes(
     id: r.id,
     content: r.content,
     createdAt: r.created_at,
+    fuzzyScore: r.fuzzy_score != null ? Number(r.fuzzy_score) : undefined,
   }));
 }

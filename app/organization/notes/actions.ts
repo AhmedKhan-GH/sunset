@@ -128,27 +128,41 @@ export async function searchOrganizationNotes(
 export async function keywordSearchOrganizationNotes(
   keyword: string,
   patientId?: string,
+  fuzzy?: string,
 ) {
   const { profile } = await requireOrganizationMember();
 
-  if (!keyword.trim()) return [];
-
-  const pattern = `%${keyword.trim()}%`;
+  if (!keyword.trim() && !fuzzy?.trim()) return [];
 
   const patientFilter = patientId
     ? sql`and n.patient_id = ${patientId}`
     : sql``;
 
+  const keywordFilter = keyword.trim()
+    ? sql`and n.content ilike ${`%${keyword.trim()}%`}`
+    : sql``;
+
+  const fuzzyTerm = fuzzy?.trim() ?? "";
+  const fuzzyFilter = fuzzyTerm
+    ? sql`and ${fuzzyTerm} <% n.content`
+    : sql``;
+
+  const orderClause = fuzzyTerm
+    ? sql`order by word_similarity(${fuzzyTerm}, n.content) desc`
+    : sql`order by n.created_at desc`;
+
   const results = await sql`
     select
       n.id, n.patient_id, n.content, n.created_at,
       p.name as patient_name
+      ${fuzzyTerm ? sql`, word_similarity(${fuzzyTerm}, n.content)::float as fuzzy_score` : sql``}
     from public.patient_notes n
     join public.patients p on p.id = n.patient_id
     where n.organization_id = ${profile.organizationId}
       ${patientFilter}
-      and n.content ilike ${pattern}
-    order by n.created_at desc
+      ${keywordFilter}
+      ${fuzzyFilter}
+    ${orderClause}
     limit 20
   `;
 
@@ -158,6 +172,7 @@ export async function keywordSearchOrganizationNotes(
     patientName: r.patient_name,
     content: r.content,
     createdAt: r.created_at,
+    fuzzyScore: r.fuzzy_score != null ? Number(r.fuzzy_score) : undefined,
   }));
 }
 

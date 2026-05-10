@@ -121,19 +121,32 @@ export async function searchMyNotes(query: string, filterOut?: string) {
   }));
 }
 
-export async function keywordSearchMyNotes(keyword: string) {
+export async function keywordSearchMyNotes(keyword: string, fuzzy?: string) {
   const { patient } = await requirePatient();
 
-  if (!keyword.trim()) return [];
+  if (!keyword.trim() && !fuzzy?.trim()) return [];
 
-  const pattern = `%${keyword.trim()}%`;
+  const keywordFilter = keyword.trim()
+    ? sql`and content ilike ${`%${keyword.trim()}%`}`
+    : sql``;
+
+  const fuzzyTerm = fuzzy?.trim() ?? "";
+  const fuzzyFilter = fuzzyTerm
+    ? sql`and ${fuzzyTerm} <% content`
+    : sql``;
+
+  const orderClause = fuzzyTerm
+    ? sql`order by word_similarity(${fuzzyTerm}, content) desc`
+    : sql`order by created_at desc`;
 
   const results = await sql`
     select id, content, created_at, author_id
+      ${fuzzyTerm ? sql`, word_similarity(${fuzzyTerm}, content)::float as fuzzy_score` : sql``}
     from public.patient_notes
     where patient_id = ${patient.id}
-      and content ilike ${pattern}
-    order by created_at desc
+      ${keywordFilter}
+      ${fuzzyFilter}
+    ${orderClause}
     limit 10
   `;
 
@@ -142,5 +155,6 @@ export async function keywordSearchMyNotes(keyword: string) {
     content: r.content,
     createdAt: r.created_at,
     isOwnNote: r.author_id === patient.userId,
+    fuzzyScore: r.fuzzy_score != null ? Number(r.fuzzy_score) : undefined,
   }));
 }

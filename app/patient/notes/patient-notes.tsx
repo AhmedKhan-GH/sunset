@@ -10,6 +10,7 @@ type Note = {
   isOwnNote: boolean;
   similarity?: number;
   filteredSimilarity?: number;
+  fuzzyScore?: number;
 };
 
 export function PatientNotes({
@@ -22,19 +23,20 @@ export function PatientNotes({
   const [notes, setNotes] = useState(initialNotes);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterOut, setFilterOut] = useState("");
+  const [fuzzy, setFuzzy] = useState("");
   const [searchMode, setSearchMode] = useState<"semantic" | "keyword">("semantic");
   const [searchResults, setSearchResults] = useState<Note[] | null>(null);
   const [isSearching, startSearch] = useTransition();
   const [isAdding, startAdd] = useTransition();
 
-  function runSearch(query: string, filter: string, mode: "semantic" | "keyword") {
-    if (!query.trim()) {
+  function runSearch(query: string, filter: string, fuzzyVal: string, mode: "semantic" | "keyword") {
+    if (!query.trim() && !(mode === "keyword" && fuzzyVal.trim())) {
       setSearchResults(null);
       return;
     }
     startSearch(async () => {
       if (mode === "keyword") {
-        const results = await keywordSearchMyNotes(query);
+        const results = await keywordSearchMyNotes(query, fuzzyVal.trim() ? fuzzyVal : undefined);
         setSearchResults(results);
       } else {
         const results = await searchMyNotes(query, filter.trim() ? filter : undefined);
@@ -45,21 +47,27 @@ export function PatientNotes({
 
   function handleSearch(query: string) {
     setSearchQuery(query);
-    runSearch(query, filterOut, searchMode);
+    runSearch(query, filterOut, fuzzy, searchMode);
   }
 
   function handleFilterOut(filter: string) {
     setFilterOut(filter);
     if (searchQuery.trim()) {
-      runSearch(searchQuery, filter, searchMode);
+      runSearch(searchQuery, filter, fuzzy, searchMode);
     }
+  }
+
+  function handleFuzzy(val: string) {
+    setFuzzy(val);
+    runSearch(searchQuery, filterOut, val, searchMode);
   }
 
   function handleModeToggle(mode: "semantic" | "keyword") {
     setSearchMode(mode);
     setFilterOut("");
+    setFuzzy("");
     if (searchQuery.trim()) {
-      runSearch(searchQuery, "", mode);
+      runSearch(searchQuery, "", "", mode);
     }
   }
 
@@ -117,7 +125,7 @@ export function PatientNotes({
         </div>
         <input
           type="text"
-          placeholder={searchMode === "semantic" ? "Search your notes..." : "Search notes by keyword..."}
+          placeholder={searchMode === "semantic" ? "Search your notes..." : "Exact keyword match (case-insensitive)..."}
           value={searchQuery}
           onChange={(e) => handleSearch(e.target.value)}
           className="w-full rounded border px-3 py-2 text-sm"
@@ -131,6 +139,15 @@ export function PatientNotes({
             className="w-full rounded border px-3 py-2 text-sm"
           />
         )}
+        {searchMode === "keyword" && (
+          <input
+            type="text"
+            placeholder="Fuzzy match (tolerates typos, e.g. 'morpine' finds 'morphine')..."
+            value={fuzzy}
+            onChange={(e) => handleFuzzy(e.target.value)}
+            className="w-full rounded border px-3 py-2 text-sm"
+          />
+        )}
         {isSearching && (
           <p className="text-xs text-zinc-400">Searching...</p>
         )}
@@ -139,6 +156,7 @@ export function PatientNotes({
             onClick={() => {
               setSearchQuery("");
               setFilterOut("");
+              setFuzzy("");
               setSearchResults(null);
             }}
             className="text-xs text-zinc-400 hover:underline"
@@ -152,7 +170,7 @@ export function PatientNotes({
         {displayNotes.map((note) => (
           <li key={note.id} className="rounded border px-4 py-3">
             <p className="whitespace-pre-wrap text-sm">{note.content}</p>
-            <div className="mt-2 flex items-center gap-3 text-xs text-zinc-400">
+            <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-zinc-400">
               <span>{new Date(note.createdAt).toLocaleString()}</span>
               <span>{note.isOwnNote ? "You" : "Care team"}</span>
               {note.similarity != null && (
@@ -163,6 +181,11 @@ export function PatientNotes({
               {note.filteredSimilarity != null && (
                 <span className="rounded bg-red-50 px-1.5 py-0.5 text-red-600 dark:bg-red-900/30 dark:text-red-400">
                   {(note.filteredSimilarity * 100).toFixed(0)}% filter
+                </span>
+              )}
+              {note.fuzzyScore != null && (
+                <span className="rounded bg-amber-50 px-1.5 py-0.5 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                  {(note.fuzzyScore * 100).toFixed(0)}% fuzzy
                 </span>
               )}
             </div>
