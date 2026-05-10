@@ -242,6 +242,8 @@ function ChatMessages({
     if (!text || isLoading) return;
     setInput("");
 
+    let created: { id: string; title: string | null } | null = null;
+
     if (!convIdRef.current) {
       const res = await fetch("/api/conversations", {
         method: "POST",
@@ -249,13 +251,16 @@ function ChatMessages({
         body: JSON.stringify({ title: text.slice(0, 60) }),
       });
       if (res.ok) {
-        const conv = await res.json();
-        convIdRef.current = conv.id;
-        onConversationCreated(conv.id, conv.title);
+        created = await res.json();
+        convIdRef.current = created!.id;
       }
     }
 
-    await sendMessage({ text });
+    sendMessage({ text });
+
+    if (created) {
+      onConversationCreated(created.id, created.title);
+    }
   }
 
   return (
