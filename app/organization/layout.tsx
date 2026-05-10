@@ -67,6 +67,11 @@ export default async function OrganizationLayout({
               Chat
             </NavLink>
             {isOrganizationAdmin && (
+              <NavLink href="/organization/audit">
+                Audit
+              </NavLink>
+            )}
+            {isOrganizationAdmin && (
               <NavLink href="/organization/settings">
                 Settings
               </NavLink>

@@ -2,7 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { db } from "@/lib/db";
+import { db, sql as rawSql } from "@/lib/db";
 import { profiles, practitioners, patients, relatives, organizations } from "@/lib/db/schema";
 import { eq, sql } from "drizzle-orm";
 import { redirect } from "next/navigation";
@@ -198,6 +198,38 @@ export async function createRelative(patientId: string, formData: FormData) {
   });
 
   revalidatePath(`/organization/patients/${patientId}`);
+}
+
+export async function getAuditLogs() {
+  const profile = await requireOrganizationAdmin();
+
+  const results = await rawSql`
+    select
+      l.id,
+      l.timestamp,
+      l.actor_id,
+      l.action,
+      l.table_name,
+      l.record_id,
+      l.metadata,
+      p.name as actor_name
+    from audit.log l
+    left join public.profiles p on p.user_id = l.actor_id
+    where l.organization_id = ${profile.organizationId}
+    order by l.timestamp desc
+    limit 100
+  `;
+
+  return results as unknown as Array<{
+    id: number;
+    timestamp: string;
+    actor_id: string;
+    action: string;
+    table_name: string;
+    record_id: string | null;
+    metadata: unknown;
+    actor_name: string | null;
+  }>;
 }
 
 export async function updateSystemPrompt(formData: FormData) {
