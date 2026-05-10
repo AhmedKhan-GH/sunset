@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { NavLink } from "@/components/nav-link";
 import { createClient } from "@/lib/supabase/server";
 import { db } from "@/lib/db";
 import { profiles, organizations } from "@/lib/db/schema";
@@ -52,19 +53,19 @@ export default async function OrganizationLayout({
           )}
           <nav className="flex gap-4 text-sm">
             {isOrganizationAdmin && (
-              <Link href="/organization" className="hover:underline">
+              <NavLink href="/organization" exact>
                 Practitioners
-              </Link>
+              </NavLink>
             )}
-            <Link href="/organization/patients" className="hover:underline">
+            <NavLink href="/organization/patients">
               Patients
-            </Link>
-            <Link href="/organization/notes" className="hover:underline">
+            </NavLink>
+            <NavLink href="/organization/notes">
               Notes
-            </Link>
-            <Link href="/organization/chat" className="hover:underline">
+            </NavLink>
+            <NavLink href="/organization/chat">
               Chat
-            </Link>
+            </NavLink>
           </nav>
         </div>
         <div className="flex items-center gap-4 text-sm">

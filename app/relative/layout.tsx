@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { NavLink } from "@/components/nav-link";
 import { createClient } from "@/lib/supabase/server";
 import { db } from "@/lib/db";
 import { relatives } from "@/lib/db/schema";
@@ -37,15 +38,15 @@ export default async function RelativeLayout({
           <span className="font-semibold">Sunset</span>
           <span className="text-sm text-zinc-500">{relative.name}</span>
           <nav className="flex gap-4 text-sm">
-            <Link href="/relative" className="hover:underline">
+            <NavLink href="/relative" exact>
               Home
-            </Link>
-            <Link href="/relative/notes" className="hover:underline">
+            </NavLink>
+            <NavLink href="/relative/notes">
               Notes
-            </Link>
-            <Link href="/relative/chat" className="hover:underline">
+            </NavLink>
+            <NavLink href="/relative/chat">
               Chat
-            </Link>
+            </NavLink>
           </nav>
         </div>
         <div className="flex items-center gap-4 text-sm">
