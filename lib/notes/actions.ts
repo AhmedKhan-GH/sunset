@@ -79,29 +79,34 @@ export async function resolveNoteContext(): Promise<NoteContext> {
 }
 
 export async function getNotes(patientId?: string) {
-  const { supabase } = await resolveNoteContext();
+  const ctx = await resolveNoteContext();
 
-  let query = supabase
-    .from("patient_notes")
-    .select("id, patient_id, author_id, content, created_at, patients(name), profiles(name)")
-    .order("created_at", { ascending: false })
-    .limit(50);
+  const patientFilter = patientId
+    ? sql`and n.patient_id = ${patientId}`
+    : sql``;
 
-  if (patientId) {
-    query = query.eq("patient_id", patientId);
-  }
+  const results = await sql`
+    select
+      n.id, n.patient_id, n.author_id, n.content, n.created_at,
+      p.name as patient_name,
+      pr.name as author_name
+    from public.patient_notes n
+    join public.patients p on p.id = n.patient_id
+    left join public.profiles pr on pr.user_id = n.author_id
+    where n.organization_id = ${ctx.organizationId}
+      ${patientFilter}
+    order by n.created_at desc
+    limit 50
+  `;
 
-  const { data, error } = await query;
-  if (error) throw error;
-
-  return (data ?? []).map((n: Record<string, unknown>) => ({
-    id: n.id as string,
-    patientId: n.patient_id as string,
-    patientName: (n.patients as { name: string } | null)?.name ?? "Unknown",
-    authorId: n.author_id as string,
-    authorName: (n.profiles as { name: string } | null)?.name ?? null,
-    content: n.content as string,
-    createdAt: n.created_at as string,
+  return results.map((r) => ({
+    id: r.id as string,
+    patientId: r.patient_id as string,
+    patientName: r.patient_name as string,
+    authorId: r.author_id as string,
+    authorName: (r.author_name as string) ?? null,
+    content: r.content as string,
+    createdAt: r.created_at as string,
   }));
 }
 
