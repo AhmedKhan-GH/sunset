@@ -108,7 +108,13 @@ export default function LoginPage() {
             href="/practitioner"
             className="w-full rounded-xl border-2 border-brand bg-surface px-5 py-4 text-center text-base font-semibold text-brand transition-colors hover:bg-brand/10"
           >
-            I'm a care provider →
+            I&apos;m a care provider -&gt;
+          </Link>
+          <Link
+            href="/admin"
+            className="w-full rounded-xl border-2 border-slate-300 bg-slate-100 px-5 py-4 text-center text-base font-semibold text-slate-700 transition-colors hover:border-slate-400 hover:bg-slate-200"
+          >
+            Admin Login
           </Link>
         </div>
 
