@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { db } from "@/lib/db";
 import { patients } from "@/lib/db/schema";
@@ -35,6 +36,14 @@ export default async function PatientLayout({
         <div className="flex items-center gap-6">
           <span className="font-semibold">Sunset</span>
           <span className="text-sm text-zinc-500">{patient.name}</span>
+          <nav className="flex gap-4 text-sm">
+            <Link href="/patient" className="hover:underline">
+              Home
+            </Link>
+            <Link href="/patient/chat" className="hover:underline">
+              Chat
+            </Link>
+          </nav>
         </div>
         <div className="flex items-center gap-4 text-sm">
           <span className="text-zinc-500">Patient</span>

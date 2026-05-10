@@ -59,6 +59,9 @@ export default async function OrganizationLayout({
             <Link href="/organization/patients" className="hover:underline">
               Patients
             </Link>
+            <Link href="/organization/chat" className="hover:underline">
+              Chat
+            </Link>
           </nav>
         </div>
         <div className="flex items-center gap-4 text-sm">
