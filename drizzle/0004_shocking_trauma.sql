@@ -1,0 +1,1 @@
+DROP POLICY "relative can read related patient" ON "patients" CASCADE;

@@ -100,14 +100,6 @@ export const patients = pgTable(
       to: authenticatedRole,
       using: sql`${table.userId} = auth.uid()`,
     }),
-    pgPolicy("relative can read related patient", {
-      for: "select",
-      to: authenticatedRole,
-      using: sql`EXISTS (
-        SELECT 1 FROM relatives r
-        WHERE r.patient_id = ${table.id} AND r.user_id = auth.uid()
-      )`,
-    }),
   ],
 ).enableRLS();
 
