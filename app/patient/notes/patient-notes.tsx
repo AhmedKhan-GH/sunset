@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { searchMyNotes } from "./actions";
+import { searchMyNotes, keywordSearchMyNotes } from "./actions";
 
 type Note = {
   id: string;
@@ -9,6 +9,7 @@ type Note = {
   createdAt: string;
   isOwnNote: boolean;
   similarity?: number;
+  filteredSimilarity?: number;
 };
 
 export function PatientNotes({
@@ -20,20 +21,46 @@ export function PatientNotes({
 }) {
   const [notes, setNotes] = useState(initialNotes);
   const [searchQuery, setSearchQuery] = useState("");
+  const [filterOut, setFilterOut] = useState("");
+  const [searchMode, setSearchMode] = useState<"semantic" | "keyword">("semantic");
   const [searchResults, setSearchResults] = useState<Note[] | null>(null);
   const [isSearching, startSearch] = useTransition();
   const [isAdding, startAdd] = useTransition();
 
-  function handleSearch(query: string) {
-    setSearchQuery(query);
+  function runSearch(query: string, filter: string, mode: "semantic" | "keyword") {
     if (!query.trim()) {
       setSearchResults(null);
       return;
     }
     startSearch(async () => {
-      const results = await searchMyNotes(query);
-      setSearchResults(results);
+      if (mode === "keyword") {
+        const results = await keywordSearchMyNotes(query);
+        setSearchResults(results);
+      } else {
+        const results = await searchMyNotes(query, filter.trim() ? filter : undefined);
+        setSearchResults(results);
+      }
     });
+  }
+
+  function handleSearch(query: string) {
+    setSearchQuery(query);
+    runSearch(query, filterOut, searchMode);
+  }
+
+  function handleFilterOut(filter: string) {
+    setFilterOut(filter);
+    if (searchQuery.trim()) {
+      runSearch(searchQuery, filter, searchMode);
+    }
+  }
+
+  function handleModeToggle(mode: "semantic" | "keyword") {
+    setSearchMode(mode);
+    setFilterOut("");
+    if (searchQuery.trim()) {
+      runSearch(searchQuery, "", mode);
+    }
   }
 
   function handleAdd(formData: FormData) {
@@ -73,24 +100,48 @@ export function PatientNotes({
         </button>
       </form>
 
-      <div>
+      <div className="flex flex-col gap-2">
+        <div className="flex gap-2 text-sm">
+          <button
+            onClick={() => handleModeToggle("semantic")}
+            className={`rounded px-3 py-1 ${searchMode === "semantic" ? "bg-black text-white dark:bg-white dark:text-black" : "bg-zinc-100 dark:bg-zinc-800"}`}
+          >
+            Semantic
+          </button>
+          <button
+            onClick={() => handleModeToggle("keyword")}
+            className={`rounded px-3 py-1 ${searchMode === "keyword" ? "bg-black text-white dark:bg-white dark:text-black" : "bg-zinc-100 dark:bg-zinc-800"}`}
+          >
+            Keyword
+          </button>
+        </div>
         <input
           type="text"
-          placeholder="Search your notes..."
+          placeholder={searchMode === "semantic" ? "Search your notes..." : "Search notes by keyword..."}
           value={searchQuery}
           onChange={(e) => handleSearch(e.target.value)}
           className="w-full rounded border px-3 py-2 text-sm"
         />
+        {searchMode === "semantic" && (
+          <input
+            type="text"
+            placeholder="Filter out (e.g. 'morning routine')..."
+            value={filterOut}
+            onChange={(e) => handleFilterOut(e.target.value)}
+            className="w-full rounded border px-3 py-2 text-sm"
+          />
+        )}
         {isSearching && (
-          <p className="mt-1 text-xs text-zinc-400">Searching...</p>
+          <p className="text-xs text-zinc-400">Searching...</p>
         )}
         {searchResults && (
           <button
             onClick={() => {
               setSearchQuery("");
+              setFilterOut("");
               setSearchResults(null);
             }}
-            className="mt-1 text-xs text-zinc-400 hover:underline"
+            className="text-xs text-zinc-400 hover:underline"
           >
             Clear search
           </button>
@@ -107,6 +158,11 @@ export function PatientNotes({
               {note.similarity != null && (
                 <span className="rounded bg-zinc-100 px-1.5 py-0.5 dark:bg-zinc-800">
                   {(note.similarity * 100).toFixed(0)}% match
+                </span>
+              )}
+              {note.filteredSimilarity != null && (
+                <span className="rounded bg-red-50 px-1.5 py-0.5 text-red-600 dark:bg-red-900/30 dark:text-red-400">
+                  {(note.filteredSimilarity * 100).toFixed(0)}% filter
                 </span>
               )}
             </div>

@@ -1,7 +1,11 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { getOrganizationNotes, searchOrganizationNotes } from "./actions";
+import {
+  getOrganizationNotes,
+  searchOrganizationNotes,
+  keywordSearchOrganizationNotes,
+} from "./actions";
 import Link from "next/link";
 
 type Note = {
@@ -11,6 +15,7 @@ type Note = {
   content: string;
   createdAt: string;
   similarity?: number;
+  filteredSimilarity?: number;
 };
 
 type Patient = {
@@ -29,35 +34,56 @@ export function NotesSearch({
 }) {
   const [notes, setNotes] = useState(initialNotes);
   const [searchQuery, setSearchQuery] = useState("");
+  const [filterOut, setFilterOut] = useState("");
+  const [searchMode, setSearchMode] = useState<"semantic" | "keyword">("semantic");
   const [searchResults, setSearchResults] = useState<Note[] | null>(null);
   const [selectedPatientId, setSelectedPatientId] = useState(initialPatientId ?? "");
   const [isSearching, startSearch] = useTransition();
 
-  function handleSearch(query: string) {
-    setSearchQuery(query);
+  function runSearch(query: string, filter: string, patientId: string, mode: "semantic" | "keyword") {
     if (!query.trim()) {
       setSearchResults(null);
       return;
     }
     startSearch(async () => {
-      const results = await searchOrganizationNotes(
-        query,
-        selectedPatientId || undefined,
-      );
-      setSearchResults(results);
+      if (mode === "keyword") {
+        const results = await keywordSearchOrganizationNotes(query, patientId || undefined);
+        setSearchResults(results);
+      } else {
+        const results = await searchOrganizationNotes(
+          query,
+          patientId || undefined,
+          filter.trim() ? filter : undefined,
+        );
+        setSearchResults(results);
+      }
     });
+  }
+
+  function handleSearch(query: string) {
+    setSearchQuery(query);
+    runSearch(query, filterOut, selectedPatientId, searchMode);
+  }
+
+  function handleFilterOut(filter: string) {
+    setFilterOut(filter);
+    if (searchQuery.trim()) {
+      runSearch(searchQuery, filter, selectedPatientId, searchMode);
+    }
+  }
+
+  function handleModeToggle(mode: "semantic" | "keyword") {
+    setSearchMode(mode);
+    setFilterOut("");
+    if (searchQuery.trim()) {
+      runSearch(searchQuery, "", selectedPatientId, mode);
+    }
   }
 
   function handlePatientFilter(patientId: string) {
     setSelectedPatientId(patientId);
     if (searchQuery.trim()) {
-      startSearch(async () => {
-        const results = await searchOrganizationNotes(
-          searchQuery,
-          patientId || undefined,
-        );
-        setSearchResults(results);
-      });
+      runSearch(searchQuery, filterOut, patientId, searchMode);
     } else {
       startSearch(async () => {
         const filtered = await getOrganizationNotes(patientId || undefined);
@@ -71,10 +97,25 @@ export function NotesSearch({
 
   return (
     <div className="flex flex-col gap-4">
+      <div className="flex gap-2 text-sm">
+        <button
+          onClick={() => handleModeToggle("semantic")}
+          className={`rounded px-3 py-1 ${searchMode === "semantic" ? "bg-black text-white dark:bg-white dark:text-black" : "bg-zinc-100 dark:bg-zinc-800"}`}
+        >
+          Semantic
+        </button>
+        <button
+          onClick={() => handleModeToggle("keyword")}
+          className={`rounded px-3 py-1 ${searchMode === "keyword" ? "bg-black text-white dark:bg-white dark:text-black" : "bg-zinc-100 dark:bg-zinc-800"}`}
+        >
+          Keyword
+        </button>
+      </div>
+
       <div className="flex gap-3">
         <input
           type="text"
-          placeholder="Search notes semantically..."
+          placeholder={searchMode === "semantic" ? "Search notes semantically..." : "Search notes by keyword..."}
           value={searchQuery}
           onChange={(e) => handleSearch(e.target.value)}
           className="flex-1 rounded border px-3 py-2 text-sm"
@@ -93,6 +134,16 @@ export function NotesSearch({
         </select>
       </div>
 
+      {searchMode === "semantic" && (
+        <input
+          type="text"
+          placeholder="Filter out (e.g. 'morning routine' to exclude morning observations)..."
+          value={filterOut}
+          onChange={(e) => handleFilterOut(e.target.value)}
+          className="rounded border px-3 py-2 text-sm"
+        />
+      )}
+
       {isSearching && (
         <p className="text-xs text-zinc-400">Searching...</p>
       )}
@@ -100,6 +151,7 @@ export function NotesSearch({
         <button
           onClick={() => {
             setSearchQuery("");
+            setFilterOut("");
             setSearchResults(null);
           }}
           className="self-start text-xs text-zinc-400 hover:underline"
@@ -123,6 +175,11 @@ export function NotesSearch({
               {note.similarity != null && (
                 <span className="rounded bg-zinc-100 px-1.5 py-0.5 dark:bg-zinc-800">
                   {(note.similarity * 100).toFixed(0)}% match
+                </span>
+              )}
+              {note.filteredSimilarity != null && (
+                <span className="rounded bg-red-50 px-1.5 py-0.5 text-red-600 dark:bg-red-900/30 dark:text-red-400">
+                  {(note.filteredSimilarity * 100).toFixed(0)}% filter
                 </span>
               )}
             </div>
