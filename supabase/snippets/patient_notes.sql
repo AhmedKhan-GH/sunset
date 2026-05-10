@@ -69,6 +69,16 @@ create policy "relative can read linked patient notes"
 
 -- ── WRITE (INSERT only — append-only clinical record) ─────────────────────────
 
+-- Organization admin: add notes about any patient in their organization
+drop policy if exists "organization admin can insert organization notes" on public.patient_notes;
+create policy "organization admin can insert organization notes"
+  on public.patient_notes for insert to authenticated
+  with check (
+    (select role from public.profiles where user_id = auth.uid()) = 'organization_admin'
+    and organization_id = (select organization_id from public.profiles where user_id = auth.uid())
+    and author_id = auth.uid()
+  );
+
 -- Practitioner: add notes about any patient in their organization
 drop policy if exists "practitioner can insert organization notes" on public.patient_notes;
 create policy "practitioner can insert organization notes"
