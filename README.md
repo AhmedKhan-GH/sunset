@@ -35,38 +35,60 @@ AI-powered hospice care platform.
    ```
 8. Open [http://localhost:3000](http://localhost:3000) and sign in with one of the seed accounts below.
 
-## Seed Accounts
+## Authentication
 
-All seed accounts use the password `admin123`.
+### Platform Admin (Seed)
 
-### Staff
+The database seed creates a single platform admin with a known password:
 
-| Email | Role | Lands on | Organization |
-|---|---|---|---|
-| `admin@sunset.dev` | platform_admin | `/admin` | — |
-| `maria.santos@sunset.dev` | organization_admin | `/organization` | Sunrise Hospice |
-| `david.chen@sunset.dev` | organization_admin | `/organization` | Harbor Palliative Care |
-| `dr.amara.okafor@sunset.dev` | practitioner | `/organization/patients` | Sunrise Hospice |
-| `dr.james.whitfield@sunset.dev` | practitioner | `/organization/patients` | Sunrise Hospice |
-| `nurse.priya.sharma@sunset.dev` | practitioner | `/organization/patients` | Sunrise Hospice |
-| `dr.elena.rodriguez@sunset.dev` | practitioner | `/organization/patients` | Harbor Palliative Care |
-| `nurse.ben.tanaka@sunset.dev` | practitioner | `/organization/patients` | Harbor Palliative Care |
+| Email | Password | Role |
+|---|---|---|
+| `admin@sunset.dev` | `admin123` | platform_admin |
 
-### Patients
+This is the only account with a pre-set password. All other users must register.
 
-| Email | Name | Lands on | Organization |
-|---|---|---|---|
-| `dorothy.williams@sunset.dev` | Dorothy Williams | `/patient` | Sunrise Hospice |
-| `robert.jackson@sunset.dev` | Robert Jackson | `/patient` | Sunrise Hospice |
-| `margaret.chen@sunset.dev` | Margaret Chen | `/patient` | Sunrise Hospice |
-| `harold.thompson@sunset.dev` | Harold Thompson | `/patient` | Sunrise Hospice |
-| `evelyn.garcia@sunset.dev` | Evelyn Garcia | `/patient` | Harbor Palliative Care |
-| `james.washington@sunset.dev` | James Washington | `/patient` | Harbor Palliative Care |
-| `helen.kim@sunset.dev` | Helen Kim | `/patient` | Harbor Palliative Care |
-| — | Arthur Patel | No portal login | Sunrise Hospice |
-| — | Gloria Nguyen | No portal login | Harbor Palliative Care |
+### Invite-Only Registration
 
-### Relatives
+All non-admin users follow an invite-then-register flow:
+
+1. An upstream user adds the person to the system with their email (e.g., org admin adds a practitioner, practitioner adds a patient)
+2. The person visits `/register`, enters their email and chooses a password
+3. The system verifies the email is on file, provisions credentials, and the account is active
+4. The person signs in at `/` with their new credentials
+
+No one can register unless their email was already added by an authorized user. This ensures the platform remains invite-only while letting users set their own passwords.
+
+### Seed Accounts
+
+The seed creates the following identities. To sign in as any of them, first register at `/register` with their email.
+
+#### Staff
+
+| Email | Role | Organization |
+|---|---|---|
+| `maria.santos@sunset.dev` | organization_admin | Sunrise Hospice |
+| `david.chen@sunset.dev` | organization_admin | Harbor Palliative Care |
+| `dr.amara.okafor@sunset.dev` | practitioner | Sunrise Hospice |
+| `dr.james.whitfield@sunset.dev` | practitioner | Sunrise Hospice |
+| `nurse.priya.sharma@sunset.dev` | practitioner | Sunrise Hospice |
+| `dr.elena.rodriguez@sunset.dev` | practitioner | Harbor Palliative Care |
+| `nurse.ben.tanaka@sunset.dev` | practitioner | Harbor Palliative Care |
+
+#### Patients
+
+| Email | Name | Organization |
+|---|---|---|
+| `dorothy.williams@sunset.dev` | Dorothy Williams | Sunrise Hospice |
+| `robert.jackson@sunset.dev` | Robert Jackson | Sunrise Hospice |
+| `margaret.chen@sunset.dev` | Margaret Chen | Sunrise Hospice |
+| `harold.thompson@sunset.dev` | Harold Thompson | Sunrise Hospice |
+| `evelyn.garcia@sunset.dev` | Evelyn Garcia | Harbor Palliative Care |
+| `james.washington@sunset.dev` | James Washington | Harbor Palliative Care |
+| `helen.kim@sunset.dev` | Helen Kim | Harbor Palliative Care |
+| — | Arthur Patel (no email) | Sunrise Hospice |
+| — | Gloria Nguyen (no email) | Harbor Palliative Care |
+
+#### Relatives
 
 | Email | Name | Relationship | Patient |
 |---|---|---|---|
@@ -80,8 +102,8 @@ All seed accounts use the password `admin123`.
 | `patricia.garcia@sunset.dev` | Patricia Garcia | child | Evelyn Garcia |
 | `ruth.washington@sunset.dev` | Ruth Washington | spouse | James Washington |
 | `susan.kim@sunset.dev` | Susan Kim | child | Helen Kim |
-| — | Thomas Kim | child (no portal login) | Helen Kim |
-| — | Anita Patel | spouse (no portal login) | Arthur Patel |
+| — | Thomas Kim (no email) | child | Helen Kim |
+| — | Anita Patel (no email) | spouse | Arthur Patel |
 
 ## Role Hierarchy
 
