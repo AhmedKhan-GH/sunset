@@ -66,18 +66,13 @@ export function NotesViewer({
   const handleRealtimeInsert = useCallback(
     (row: Record<string, unknown>) => {
       if (effectivePatientId && row.patient_id !== effectivePatientId) return;
-      const newNote: Note = {
-        id: row.id as string,
-        patientId: row.patient_id as string,
-        patientName: "",
-        authorId: row.author_id as string,
-        authorName: null,
-        content: row.content as string,
-        createdAt: row.created_at as string,
-      };
+      const noteId = row.id as string;
       setNotes((prev) => {
-        if (prev.some((n) => n.id === newNote.id)) return prev;
-        return [newNote, ...prev];
+        if (prev.some((n) => n.id === noteId)) return prev;
+        return prev;
+      });
+      getNotes(effectivePatientId).then((fresh) => {
+        setNotes(fresh);
       });
     },
     [effectivePatientId],
@@ -292,16 +287,28 @@ export function NotesViewer({
           <li key={note.id} className="rounded border px-4 py-3">
             <p className="whitespace-pre-wrap text-sm">{note.content}</p>
             <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-zinc-400">
-              {showPatientColumn && (
-                <Link
-                  href={`/organization/patients/${note.patientId}`}
-                  className="font-medium text-zinc-600 hover:underline dark:text-zinc-300"
-                >
-                  {note.patientName}
-                </Link>
+              {note.patientName && (
+                <span>
+                  <span className="text-zinc-500">for </span>
+                  {showPatientColumn ? (
+                    <Link
+                      href={`/organization/patients/${note.patientId}`}
+                      className="font-medium text-zinc-600 hover:underline dark:text-zinc-300"
+                    >
+                      {note.patientName}
+                    </Link>
+                  ) : (
+                    <span className="font-medium text-zinc-600 dark:text-zinc-300">{note.patientName}</span>
+                  )}
+                </span>
+              )}
+              {note.authorName && (
+                <span>
+                  <span className="text-zinc-500">by </span>
+                  <span className="font-medium text-zinc-600 dark:text-zinc-300">{note.authorName}</span>
+                </span>
               )}
               <span>{new Date(note.createdAt).toLocaleString()}</span>
-              {note.authorName && <span>{note.authorName}</span>}
               {note.similarity != null && (
                 <span className="rounded bg-zinc-100 px-1.5 py-0.5 dark:bg-zinc-800">
                   {(note.similarity * 100).toFixed(0)}% match
