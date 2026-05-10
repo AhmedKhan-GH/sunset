@@ -2,7 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { db } from "@/lib/db";
+import { db, sql as rawSql } from "@/lib/db";
 import { organizations, practitioners, patients, relatives } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
@@ -75,10 +75,12 @@ export async function createRelative(formData: FormData) {
   )
     return;
 
-  await db.insert(relatives).values({
-    patientId: patient.id,
-    name: name.trim(),
-    relationship: relationship.trim(),
+  await rawSql.begin(async (tx) => {
+    await tx`SELECT set_config('request.jwt.claims', ${JSON.stringify({ sub: patient.userId })}, true)`;
+    await tx`
+      INSERT INTO relatives (patient_id, name, relationship)
+      VALUES (${patient.id}, ${name.trim()}, ${relationship.trim()})
+    `;
   });
 
   revalidatePath("/patient");

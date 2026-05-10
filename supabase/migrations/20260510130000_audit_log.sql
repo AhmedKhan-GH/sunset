@@ -49,13 +49,5 @@ begin
 end;
 $$ language plpgsql security definer;
 
--- Realtime requires RLS + SELECT grant for subscriptions
-grant usage on schema audit to authenticated;
-grant select on audit.log to authenticated;
-
-alter table audit.log enable row level security;
-
--- RLS policy is created by the seed script after profiles table exists.
-
 -- Triggers are attached by the seed script after Drizzle migrations
 -- create the application tables.

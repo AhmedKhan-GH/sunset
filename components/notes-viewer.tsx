@@ -65,7 +65,8 @@ export function NotesViewer({
 
   const handleRealtimeInsert = useCallback(
     () => {
-      getNotes(effectivePatientId).then((fresh) => {
+      startLoad(async () => {
+        const fresh = await getNotes(effectivePatientId);
         setNotes(fresh);
       });
     },

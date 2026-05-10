@@ -102,12 +102,18 @@ export async function createPractitioner(formData: FormData) {
     organizationId: profile.organizationId,
   });
 
-  await db.insert(practitioners).values({
-    userId: data.user.id,
-    organizationId: profile.organizationId,
-    specialty: typeof specialty === "string" && specialty.trim() ? specialty.trim() : null,
-    licenseNumber: typeof licenseNumber === "string" && licenseNumber.trim() ? licenseNumber.trim() : null,
-    npi: typeof npi === "string" && npi.trim() ? npi.trim() : null,
+  await rawSql.begin(async (tx) => {
+    await tx`SELECT set_config('request.jwt.claims', ${JSON.stringify({ sub: profile.userId })}, true)`;
+    await tx`
+      INSERT INTO practitioners (user_id, organization_id, specialty, license_number, npi)
+      VALUES (
+        ${data.user.id},
+        ${profile.organizationId},
+        ${typeof specialty === "string" && specialty.trim() ? specialty.trim() : null},
+        ${typeof licenseNumber === "string" && licenseNumber.trim() ? licenseNumber.trim() : null},
+        ${typeof npi === "string" && npi.trim() ? npi.trim() : null}
+      )
+    `;
   });
 
   revalidatePath("/organization");
@@ -144,13 +150,19 @@ export async function createPatient(formData: FormData) {
     .from(practitioners)
     .where(eq(practitioners.userId, profile.userId));
 
-  await db.insert(patients).values({
-    organizationId: profile.organizationId,
-    practitionerId: practitioner?.id,
-    name: name.trim(),
-    email: typeof email === "string" && email.trim() ? email.trim() : null,
-    dateOfBirth: dateOfBirth.trim(),
-    gender: gender.trim(),
+  await rawSql.begin(async (tx) => {
+    await tx`SELECT set_config('request.jwt.claims', ${JSON.stringify({ sub: profile.userId })}, true)`;
+    await tx`
+      INSERT INTO patients (organization_id, practitioner_id, name, email, date_of_birth, gender)
+      VALUES (
+        ${profile.organizationId},
+        ${practitioner?.id ?? null},
+        ${name.trim()},
+        ${typeof email === "string" && email.trim() ? email.trim() : null},
+        ${dateOfBirth.trim()},
+        ${gender.trim()}
+      )
+    `;
   });
 
   revalidatePath("/organization/patients");
@@ -176,7 +188,7 @@ export async function getPatientWithRelatives(patientId: string) {
 }
 
 export async function createRelative(patientId: string, formData: FormData) {
-  await requireOrganizationUser();
+  const profile = await requireOrganizationUser();
 
   const name = formData.get("name");
   const email = formData.get("email");
@@ -190,11 +202,17 @@ export async function createRelative(patientId: string, formData: FormData) {
   )
     return;
 
-  await db.insert(relatives).values({
-    patientId,
-    name: name.trim(),
-    email: typeof email === "string" && email.trim() ? email.trim() : null,
-    relationship: relationship.trim(),
+  await rawSql.begin(async (tx) => {
+    await tx`SELECT set_config('request.jwt.claims', ${JSON.stringify({ sub: profile.userId })}, true)`;
+    await tx`
+      INSERT INTO relatives (patient_id, name, email, relationship)
+      VALUES (
+        ${patientId},
+        ${name.trim()},
+        ${typeof email === "string" && email.trim() ? email.trim() : null},
+        ${relationship.trim()}
+      )
+    `;
   });
 
   revalidatePath(`/organization/patients/${patientId}`);
