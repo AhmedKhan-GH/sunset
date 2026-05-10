@@ -3,21 +3,17 @@
 import { useEffect } from "react";
 import { createClient } from "./client";
 
-type RealtimePayload = {
-  new: Record<string, unknown>;
-  old: Record<string, unknown>;
-  eventType: "INSERT" | "UPDATE" | "DELETE";
-};
-
 export function useRealtimeNotes(
   organizationId: string,
-  onInsert: (payload: Record<string, unknown>) => void,
+  onInsert: () => void,
 ) {
   useEffect(() => {
+    if (!organizationId) return;
+
     const supabase = createClient();
 
     const channel = supabase
-      .channel("notes-realtime")
+      .channel(`notes-${organizationId}`)
       .on(
         "postgres_changes",
         {
@@ -26,8 +22,8 @@ export function useRealtimeNotes(
           table: "patient_notes",
           filter: `organization_id=eq.${organizationId}`,
         },
-        (payload: RealtimePayload) => {
-          onInsert(payload.new);
+        () => {
+          onInsert();
         },
       )
       .subscribe();

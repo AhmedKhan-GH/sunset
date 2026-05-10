@@ -64,13 +64,7 @@ export function NotesViewer({
   const effectivePatientId = fixedPatientId ?? (selectedPatientId || undefined);
 
   const handleRealtimeInsert = useCallback(
-    (row: Record<string, unknown>) => {
-      if (effectivePatientId && row.patient_id !== effectivePatientId) return;
-      const noteId = row.id as string;
-      setNotes((prev) => {
-        if (prev.some((n) => n.id === noteId)) return prev;
-        return prev;
-      });
+    () => {
       getNotes(effectivePatientId).then((fresh) => {
         setNotes(fresh);
       });
