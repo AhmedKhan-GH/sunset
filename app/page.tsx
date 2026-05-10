@@ -1,6 +1,7 @@
 "use client";
 
 import { createClient } from "@/lib/supabase/client";
+import { getLoginRedirect } from "@/app/login-actions";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -17,18 +18,25 @@ export default function LoginPage() {
     setLoading(true);
     setError("");
 
-    const { error } = await supabase.auth.signInWithPassword({
+    const { error: authError } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
-    if (error) {
-      setError(error.message);
+    if (authError) {
+      setError(authError.message);
       setLoading(false);
       return;
     }
 
-    router.push("/admin");
+    const redirect = await getLoginRedirect();
+    if (redirect === "/") {
+      setError("No account found for this user.");
+      setLoading(false);
+      return;
+    }
+
+    router.push(redirect);
   }
 
   return (
