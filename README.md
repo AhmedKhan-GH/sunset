@@ -35,31 +35,40 @@ AI-powered hospice care platform.
 
 All seed accounts use the password `admin123`.
 
-| Email | Role | Org |
-|---|---|---|
-| `admin@sunset.dev` | platform_admin | — |
-| `org-admin@sunset.dev` | org_admin | Sunrise Hospice |
-| `practitioner@sunset.dev` | practitioner | Sunrise Hospice |
-
-The seed also creates a sample patient (John Doe) and relative (Jane Doe, spouse) under Sunrise Hospice.
+| Email | Role | Lands on | Org |
+|---|---|---|---|
+| `admin@sunset.dev` | platform_admin | `/admin` | — |
+| `org-admin@sunset.dev` | org_admin | `/org` | Sunrise Hospice |
+| `practitioner@sunset.dev` | practitioner | `/org/patients` | Sunrise Hospice |
+| `patient@sunset.dev` | patient | `/patient` | Sunrise Hospice (John Doe) |
+| `relative@sunset.dev` | relative | `/relative` | Sunrise Hospice (Jane Doe, spouse of John Doe) |
 
 ## Role Hierarchy
 
-Access is enforced top-down via Postgres RLS policies:
+Access is enforced top-down: each role manages everything below it and can read its ancestors.
 
 ```
-platform_admin
-└── org_admin          (scoped to one organization)
-    └── practitioner   (scoped to one organization)
-        └── patients   (created by practitioners)
-            └── relatives
+platform_admin            manages: organizations
+└── org_admin             manages: practitioners, patients (scoped to one org)
+    └── practitioner      manages: patients + relatives (scoped to one org)
+        └── patient       manages: own relatives; reads care team (practitioner, org)
+            └── relative  reads: linked patient + care team
 ```
 
-| Role | Permissions |
-|---|---|
-| `platform_admin` | Full access to everything |
-| `org_admin` | Manage practitioners, patients, and relatives within their org |
-| `practitioner` | Manage patients and relatives within their org |
+| Role | Can mutate | Can read upward |
+|---|---|---|
+| `platform_admin` | Everything | — |
+| `org_admin` | Practitioners, patients, relatives in their org | — |
+| `practitioner` | Patients and relatives in their org | Their organization |
+| `patient` | Their own relatives | Practitioner, organization |
+| `relative` | — (read-only) | Linked patient, practitioner, organization |
+
+### How it's enforced
+
+- **PostgREST (browser → Supabase REST API)** is gated by Postgres RLS policies declared in `lib/db/schema.ts`. Only the routes the frontend hits directly with the anon key (e.g. the login-redirect probe in `app/page.tsx`) go through this path.
+- **Server actions** (`app/*/actions.ts`) connect via Drizzle as the `postgres` superuser, which bypasses RLS. Authorization is enforced explicitly by `requireXxx()` helpers (`requirePlatformAdmin`, `requireOrgUser`, `requireOrgAdmin`, `requirePatient`, `requireRelative`) at the top of every action.
+
+This split is intentional: cross-table policies that try to walk the hierarchy at the RLS layer (e.g. "let a relative read their patient") cause infinite recursion in Postgres (`42P17`), so ancestor reads happen server-side via Drizzle instead.
 
 ## Database Workflow
 
