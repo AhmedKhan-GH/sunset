@@ -63,6 +63,9 @@ async function seed() {
     alter publication supabase_realtime add table public.patient_notes;
     alter table public.patient_notes replica identity full;
 
+    alter publication supabase_realtime add table audit.log;
+    alter table audit.log replica identity full;
+
     create trigger audit_patient_notes_insert
       after insert on public.patient_notes
       for each row execute function audit.log_change('note.created');
