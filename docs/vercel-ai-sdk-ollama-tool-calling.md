@@ -29,7 +29,7 @@ docker run -d \
 
 # Pull a model (temporarily connect to bridge network for download)
 docker network connect bridge ollama
-docker exec ollama ollama pull qwen2.5:7b
+docker exec ollama ollama pull gpt-oss:20b
 docker network disconnect bridge ollama
 ```
 
@@ -41,7 +41,7 @@ After the model is pulled, the container only listens on `127.0.0.1:11434` with 
 # Should fail — no outbound access
 docker exec ollama curl -s https://example.com
 # Should succeed — inference works
-curl http://127.0.0.1:11434/api/generate -d '{"model":"qwen2.5:7b","prompt":"hello","stream":false}'
+curl http://127.0.0.1:11434/api/generate -d '{"model":"gpt-oss:20b","prompt":"hello","stream":false}'
 ```
 
 ### GPU support (optional)
@@ -79,7 +79,7 @@ export const ollama = createOpenAI({
   apiKey: "ollama", // required by the SDK but unused by Ollama
 });
 
-export const DEFAULT_MODEL = process.env.OLLAMA_MODEL ?? "qwen2.5:7b";
+export const DEFAULT_MODEL = process.env.OLLAMA_MODEL ?? "gpt-oss:20b";
 ```
 
 ### Environment Variables
@@ -87,7 +87,7 @@ export const DEFAULT_MODEL = process.env.OLLAMA_MODEL ?? "qwen2.5:7b";
 ```env
 # .env.local
 OLLAMA_BASE_URL=http://localhost:11434/v1
-OLLAMA_MODEL=qwen2.5:7b
+OLLAMA_MODEL=gpt-oss:20b
 ```
 
 ## Tool Calling

@@ -5,4 +5,4 @@ export const ollama = createOpenAI({
   apiKey: "ollama",
 });
 
-export const DEFAULT_MODEL = process.env.OLLAMA_MODEL ?? "qwen2.5:7b";
+export const DEFAULT_MODEL = process.env.OLLAMA_MODEL ?? "gpt-oss:20b";
