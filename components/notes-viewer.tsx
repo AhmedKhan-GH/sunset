@@ -184,21 +184,23 @@ export function NotesViewer({
   return (
     <div className="flex flex-col gap-4">
       {showAddForm && addNoteAction && (
-        <form action={handleAdd} className="flex flex-col gap-2">
+        <form action={handleAdd} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
           <textarea
             name="content"
             placeholder={addNotePlaceholder ?? "Add a note..."}
             required
             rows={3}
-            className="rounded border px-3 py-2"
+            className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand-soft"
           />
-          <button
-            type="submit"
-            disabled={isAdding}
-            className="self-end rounded bg-black px-4 py-2 text-sm text-white disabled:opacity-50 dark:bg-white dark:text-black"
-          >
-            {isAdding ? "Saving..." : "Add note"}
-          </button>
+          <div className="mt-3 flex justify-end">
+            <button
+              type="submit"
+              disabled={isAdding}
+              className="rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white transition hover:brightness-110 disabled:opacity-50"
+            >
+              {isAdding ? "Saving..." : "Add note"}
+            </button>
+          </div>
         </form>
       )}
 
@@ -207,7 +209,7 @@ export function NotesViewer({
           <button
             key={mode}
             onClick={() => handleModeToggle(mode)}
-            className={`rounded px-3 py-1 capitalize ${viewMode === mode ? "bg-black text-white dark:bg-white dark:text-black" : "bg-zinc-100 dark:bg-zinc-800"}`}
+            className={`rounded-lg px-3 py-1.5 capitalize transition ${viewMode === mode ? "bg-brand text-white" : "bg-slate-100 text-foreground hover:bg-slate-200"}`}
           >
             {mode}
           </button>
@@ -216,7 +218,7 @@ export function NotesViewer({
           <select
             value={selectedPatientId}
             onChange={(e) => handlePatientFilter(e.target.value)}
-            className="ml-auto rounded border px-3 py-1.5 text-sm"
+            className="ml-auto rounded-lg border border-border bg-surface px-3 py-1.5 text-sm focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand-soft"
           >
             <option value="">All patients</option>
             {patients.map((p) => (
@@ -235,7 +237,7 @@ export function NotesViewer({
             placeholder={viewMode === "semantic" ? "Include — finds notes with similar meaning" : "Exact — case-insensitive substring match"}
             value={searchQuery}
             onChange={(e) => handleSearch(e.target.value)}
-            className="rounded border px-3 py-2 text-sm"
+            className="rounded-lg border border-border bg-surface px-3 py-2 text-sm focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand-soft"
           />
 
           {viewMode === "semantic" && (
@@ -244,7 +246,7 @@ export function NotesViewer({
               placeholder="Exclude — demotes notes with similar meaning"
               value={filterOut}
               onChange={(e) => handleFilterOut(e.target.value)}
-              className="rounded border px-3 py-2 text-sm"
+              className="rounded-lg border border-border bg-surface px-3 py-2 text-sm focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand-soft"
             />
           )}
 
@@ -254,14 +256,14 @@ export function NotesViewer({
               placeholder="Fuzzy — tolerates typos and misspellings"
               value={fuzzy}
               onChange={(e) => handleFuzzy(e.target.value)}
-              className="rounded border px-3 py-2 text-sm"
+              className="rounded-lg border border-border bg-surface px-3 py-2 text-sm focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand-soft"
             />
           )}
         </>
       )}
 
       {isSearching && (
-        <p className="text-xs text-zinc-400">Searching...</p>
+        <p className="text-xs text-muted-foreground">Searching...</p>
       )}
       {searchResults && (
         <button
@@ -271,7 +273,7 @@ export function NotesViewer({
             setFuzzy("");
             setSearchResults(null);
           }}
-          className="self-start text-xs text-zinc-400 hover:underline"
+          className="self-start text-xs text-brand hover:underline"
         >
           Clear search
         </button>
@@ -279,43 +281,43 @@ export function NotesViewer({
 
       <ul className="flex flex-col gap-3">
         {displayNotes.map((note) => (
-          <li key={note.id} className="rounded border px-4 py-3">
+          <li key={note.id} className="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
             <p className="whitespace-pre-wrap text-sm">{note.content}</p>
-            <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-zinc-400">
+            <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
               {note.patientName && (
                 <span>
-                  <span className="text-zinc-500">for </span>
+                  <span className="text-muted-foreground">for </span>
                   {showPatientColumn ? (
                     <Link
                       href={`/organization/patients/${note.patientId}`}
-                      className="font-medium text-zinc-600 hover:underline dark:text-zinc-300"
+                      className="font-medium text-brand hover:underline"
                     >
                       {note.patientName}
                     </Link>
                   ) : (
-                    <span className="font-medium text-zinc-600 dark:text-zinc-300">{note.patientName}</span>
+                    <span className="font-medium text-foreground">{note.patientName}</span>
                   )}
                 </span>
               )}
               {note.authorName && (
                 <span>
-                  <span className="text-zinc-500">by </span>
-                  <span className="font-medium text-zinc-600 dark:text-zinc-300">{note.authorName}</span>
+                  <span className="text-muted-foreground">by </span>
+                  <span className="font-medium text-foreground">{note.authorName}</span>
                 </span>
               )}
               <span>{new Date(note.createdAt).toLocaleString()}</span>
               {note.similarity != null && (
-                <span className="rounded bg-zinc-100 px-1.5 py-0.5 dark:bg-zinc-800">
+                <span className="rounded-full bg-brand/10 px-2 py-0.5 text-brand">
                   {(note.similarity * 100).toFixed(0)}% match
                 </span>
               )}
               {note.filteredSimilarity != null && (
-                <span className="rounded bg-red-50 px-1.5 py-0.5 text-red-600 dark:bg-red-900/30 dark:text-red-400">
+                <span className="rounded-full bg-red-50 px-2 py-0.5 text-red-600">
                   {(note.filteredSimilarity * 100).toFixed(0)}% filter
                 </span>
               )}
               {note.fuzzyScore != null && (
-                <span className="rounded bg-amber-50 px-1.5 py-0.5 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                <span className="rounded-full bg-amber-50 px-2 py-0.5 text-amber-700">
                   {(note.fuzzyScore * 100).toFixed(0)}% fuzzy
                 </span>
               )}
@@ -323,7 +325,7 @@ export function NotesViewer({
           </li>
         ))}
         {displayNotes.length === 0 && (
-          <li className="text-sm text-zinc-400">
+          <li className="text-sm text-muted-foreground">
             {searchResults ? "No matching notes." : "No notes yet."}
           </li>
         )}

@@ -87,19 +87,19 @@ export function ChatPanel() {
 
   return (
     <div className="flex h-full">
-      <div className="flex w-48 flex-col border-r">
-        <div className="border-b px-3 py-2">
-          <span className="text-xs font-medium text-zinc-400">History</span>
+      <div className="flex w-52 flex-col border-r border-slate-200 bg-slate-50">
+        <div className="border-b border-slate-200 px-3 py-2">
+          <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">History</span>
         </div>
         <div className="flex-1 overflow-y-auto">
           {conversationList.map((c) => (
             <button
               key={c.id}
               onClick={() => selectConversation(c.id)}
-              className={`w-full truncate px-3 py-2 text-left text-xs ${
+              className={`w-full truncate px-3 py-2.5 text-left text-xs transition ${
                 c.id === activeConversationId
-                  ? "bg-zinc-100 dark:bg-zinc-800"
-                  : "hover:bg-zinc-50 dark:hover:bg-zinc-900"
+                  ? "bg-brand/10 font-medium text-brand"
+                  : "text-foreground hover:bg-slate-100"
               }`}
             >
               {c.title || "New conversation"}
@@ -167,7 +167,7 @@ function ChatHeader({
   }
 
   return (
-    <div className="flex items-center justify-between border-b px-4 py-2">
+    <div className="flex items-center justify-between border-b border-slate-200 px-4 py-2">
       <div className="min-w-0 flex-1">
         {conversationId ? (
           editing ? (
@@ -177,25 +177,25 @@ function ChatHeader({
               onChange={(e) => setEditValue(e.target.value)}
               onBlur={saveTitle}
               onKeyDown={handleKeyDown}
-              className="w-full rounded bg-transparent px-1 text-sm font-medium outline-none ring-1 ring-zinc-300 dark:ring-zinc-600"
+              className="w-full rounded-lg bg-transparent px-2 text-sm font-medium outline-none ring-1 ring-brand-soft focus:ring-2 focus:ring-brand"
               autoFocus
             />
           ) : (
             <button
               onClick={startEditing}
-              className="w-full truncate rounded bg-transparent px-1 text-left text-sm font-medium ring-1 ring-zinc-200 hover:ring-zinc-400 dark:ring-zinc-700 dark:hover:ring-zinc-500"
+              className="w-full truncate rounded-lg bg-transparent px-2 text-left text-sm font-medium ring-1 ring-slate-200 transition hover:ring-brand-soft"
               title="Click to rename"
             >
               {title || "New conversation"}
             </button>
           )
         ) : (
-          <span className="text-sm font-medium text-zinc-400">New conversation</span>
+          <span className="text-sm font-medium text-muted-foreground">New conversation</span>
         )}
       </div>
       <button
         onClick={onNewChat}
-        className="ml-3 shrink-0 rounded border px-2.5 py-1 text-xs text-zinc-900 hover:bg-zinc-50 dark:text-zinc-100 dark:hover:bg-zinc-800"
+        className="ml-3 shrink-0 rounded-lg border border-slate-200 px-2.5 py-1 text-xs font-medium text-foreground transition hover:bg-slate-50"
       >
         New chat
       </button>
@@ -269,7 +269,7 @@ function ChatMessages({
     <>
       <div ref={scrollRef} className="flex-1 overflow-y-auto p-4">
         {messages.length === 0 && (
-          <p className="text-sm text-zinc-400">
+          <p className="text-sm text-muted-foreground">
             Ask anything. Inference runs locally via Ollama.
           </p>
         )}
@@ -286,14 +286,14 @@ function ChatMessages({
                 className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
               >
                 <div
-                  className={`max-w-[80%] rounded-lg px-4 py-2 text-sm whitespace-pre-wrap ${
+                  className={`max-w-[80%] rounded-xl px-4 py-2.5 text-sm whitespace-pre-wrap ${
                     m.role === "user"
-                      ? "bg-black text-white dark:bg-white dark:text-black"
-                      : "bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100"
+                      ? "bg-brand text-white"
+                      : "bg-slate-100 text-foreground"
                   }`}
                 >
                   {!hasText && m.role === "assistant" && isLoading ? (
-                    <span className="text-zinc-400">
+                    <span className="text-muted-foreground">
                       Thinking
                       <span className="inline-flex w-4">
                         <span className="animate-pulse">.</span>
@@ -309,9 +309,9 @@ function ChatMessages({
                       if (p.type === "tool-sendNotification" && p.state === "output-available") {
                         const { title, message } = p.output as { success: boolean; title: string; message: string };
                         return (
-                          <div key={i} className="my-1 rounded border border-green-300 bg-green-50 px-3 py-2 dark:border-green-700 dark:bg-green-950">
-                            <p className="font-medium text-green-900 dark:text-green-100">{title}</p>
-                            <p className="text-green-700 dark:text-green-300">{message}</p>
+                          <div key={i} className="my-1 rounded-lg border border-green-300 bg-green-50 px-3 py-2">
+                            <p className="font-medium text-green-900">{title}</p>
+                            <p className="text-green-700">{message}</p>
                           </div>
                         );
                       }
@@ -325,7 +325,7 @@ function ChatMessages({
 
           {status === "submitted" && !messages.some((m) => m.role === "assistant") && (
             <div className="flex justify-start">
-              <div className="rounded-lg bg-zinc-100 px-4 py-2 text-sm text-zinc-400 dark:bg-zinc-800">
+              <div className="rounded-xl bg-slate-100 px-4 py-2.5 text-sm text-muted-foreground">
                 Thinking
                 <span className="inline-flex w-4">
                   <span className="animate-pulse">.</span>
@@ -344,19 +344,19 @@ function ChatMessages({
         )}
       </div>
 
-      <form onSubmit={handleSubmit} className="border-t p-4">
+      <form onSubmit={handleSubmit} className="border-t border-slate-200 p-4">
         <div className="flex gap-2">
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Message…"
-            className="flex-1 rounded border px-3 py-2 text-sm"
+            className="flex-1 rounded-lg border border-border bg-surface px-3 py-2 text-sm focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand-soft"
             disabled={isLoading}
           />
           <button
             type="submit"
             disabled={isLoading || !input.trim()}
-            className="rounded bg-black px-4 py-2 text-sm text-white disabled:opacity-60 dark:bg-white dark:text-black"
+            className="rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white transition hover:brightness-110 disabled:opacity-60"
           >
             Send
           </button>
