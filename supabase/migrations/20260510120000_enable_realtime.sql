@@ -1,6 +1,3 @@
--- Enable realtime CDC on patient_notes so all connected clients
--- see new notes appear instantly without page refresh.
-alter publication supabase_realtime add table public.patient_notes;
-
--- Full replica identity required for realtime filters on non-PK columns.
-alter table public.patient_notes replica identity full;
+-- Realtime CDC and audit log setup for patient_notes is applied
+-- after the table is created by the seed script (patient_notes.sql).
+-- This migration is intentionally a no-op; the seed handles it.

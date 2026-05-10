@@ -58,6 +58,36 @@ async function seed() {
   const patientNotesSql = fs.readFileSync("./supabase/snippets/patient_notes.sql", "utf8");
   await client.unsafe(patientNotesSql);
 
+  console.log("\nenabling realtime + audit triggers");
+  await client.unsafe(`
+    alter publication supabase_realtime add table public.patient_notes;
+    alter table public.patient_notes replica identity full;
+
+    create trigger audit_patient_notes_insert
+      after insert on public.patient_notes
+      for each row execute function audit.log_change('note.created');
+
+    create trigger audit_patients_insert
+      after insert on public.patients
+      for each row execute function audit.log_change('patient.created');
+
+    create trigger audit_patients_update
+      after update on public.patients
+      for each row execute function audit.log_change('patient.updated');
+
+    create trigger audit_relatives_insert
+      after insert on public.relatives
+      for each row execute function audit.log_change('relative.added');
+
+    create trigger audit_relatives_delete
+      after delete on public.relatives
+      for each row execute function audit.log_change('relative.removed');
+
+    create trigger audit_practitioners_insert
+      after insert on public.practitioners
+      for each row execute function audit.log_change('practitioner.added');
+  `);
+
   // ── Platform admin ──────────────────────────────────────────────────────
   console.log("\nplatform admin");
   const platformAdminId = await getOrCreateAuthUser(
