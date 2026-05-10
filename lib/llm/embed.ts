@@ -16,8 +16,9 @@ function getEmbedder(): Promise<Pipeline> {
 
 export async function embedText(text: string): Promise<number[]> {
   const embedder = await getEmbedder();
+  // @ts-expect-error -- @xenova/transformers has incorrect types for normalize
   const out = await embedder(text, { pooling: "mean", normalize: true });
-  return Array.from(out.data as Float32Array);
+  return Array.from((out as { data: Float32Array }).data);
 }
 
 export function vectorLiteral(arr: number[]): string {
