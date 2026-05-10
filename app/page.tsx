@@ -35,7 +35,16 @@ export default function LoginPage() {
 
     if (profile?.role === "platform_admin") router.push("/admin");
     else if (profile?.role === "org_admin") router.push("/org");
-    else router.push("/org/patients");
+    else if (profile?.role === "practitioner") router.push("/org/patients");
+    else {
+      // No profile row — check if they're a patient
+      const { data: patient } = await supabase
+        .from("patients")
+        .select("id")
+        .single();
+      if (patient) router.push("/patient");
+      else setError("No account found for this user.");
+    }
   }
 
   return (
