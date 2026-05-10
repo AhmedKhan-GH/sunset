@@ -2,7 +2,7 @@ import { streamText, convertToModelMessages, stepCountIs } from "ai";
 import { ollama, DEFAULT_MODEL } from "@/lib/ai/ollama";
 import { createClient } from "@/lib/supabase/server";
 import { db } from "@/lib/db";
-import { conversations, messages } from "@/lib/db/schema";
+import { conversations, messages, profiles, organizations } from "@/lib/db/schema";
 import { eq, sql } from "drizzle-orm";
 import { addPatientNoteTool } from "@/lib/ai/tools/notes-tools";
 import { searchNotesTool, recentNotesTool } from "@/lib/ai/tools/search-tools";
@@ -28,6 +28,22 @@ export async function POST(req: Request) {
   const { messages: chatMessages, conversationId } = await req.json();
 
   const activeConversationId: string | null = conversationId ?? null;
+
+  // Load organization system prompt for the current user
+  let orgSystemPrompt: string | null = null;
+  if (user) {
+    const [profile] = await db
+      .select({ organizationId: profiles.organizationId })
+      .from(profiles)
+      .where(eq(profiles.userId, user.id));
+    if (profile?.organizationId) {
+      const [org] = await db
+        .select({ systemPrompt: organizations.systemPrompt })
+        .from(organizations)
+        .where(eq(organizations.id, profile.organizationId));
+      orgSystemPrompt = org?.systemPrompt ?? null;
+    }
+  }
 
   if (user && activeConversationId) {
     const lastUserMessage = chatMessages
@@ -73,6 +89,7 @@ export async function POST(req: Request) {
       "SELF (patient/relative):",
       "  getMyOrganization, getMyCareTeam, getMyRecentNotes, getMyRelatives — self-service tools.",
       "  Patients and relatives cannot create notes but can search their own.",
+      ...(orgSystemPrompt ? ["", "ORGANIZATION INSTRUCTIONS:", orgSystemPrompt] : []),
     ].join("\n"),
     messages: await convertToModelMessages(chatMessages),
     tools: {

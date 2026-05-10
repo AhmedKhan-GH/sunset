@@ -19,6 +19,7 @@ export const organizations = pgTable(
   {
     id: uuid("id").defaultRandom().primaryKey(),
     name: text("name").notNull(),
+    systemPrompt: text("system_prompt"),
     createdAt: integer("created_at")
       .notNull()
       .default(sql`extract(epoch from now())::integer`),
