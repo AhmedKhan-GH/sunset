@@ -1,5 +1,9 @@
+"use client";
+
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { SunsetLogo } from "@/components/sunset-logo";
+import { Sidebar } from "./sidebar";
 import { SignOutButton } from "./sign-out-button";
 
 const symptoms = [
@@ -85,13 +89,27 @@ const symptoms = [
 ];
 
 export default function HomePage() {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  useEffect(() => {
+    if (!sidebarOpen) return;
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") setSidebarOpen(false);
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [sidebarOpen]);
+
   return (
     <div className="flex flex-1 flex-col bg-background">
       <header className="border-b border-border bg-surface">
         <div className="mx-auto flex w-full max-w-md items-center justify-between px-4 py-3">
           <button
             type="button"
-            aria-label="Open menu"
+            aria-label={sidebarOpen ? "Close menu" : "Open menu"}
+            aria-expanded={sidebarOpen}
+            aria-controls="main-sidebar"
+            onClick={() => setSidebarOpen((open) => !open)}
             className="rounded-md p-2 text-muted-foreground hover:bg-muted"
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" className="h-6 w-6">
@@ -118,6 +136,39 @@ export default function HomePage() {
           </div>
         </div>
       </header>
+
+      {sidebarOpen && (
+        <button
+          type="button"
+          aria-label="Close menu"
+          onClick={() => setSidebarOpen(false)}
+          className="fixed inset-0 z-40 bg-black/30"
+        />
+      )}
+      <aside
+        id="main-sidebar"
+        aria-hidden={!sidebarOpen}
+        className={`fixed left-0 top-0 z-50 flex h-full w-72 transform flex-col overflow-y-auto border-r border-border bg-surface shadow-xl transition-transform ${
+          sidebarOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        <div className="flex items-center justify-between border-b border-border px-4 py-3">
+          <span className="text-lg font-bold tracking-wider text-foreground">
+            Menu
+          </span>
+          <button
+            type="button"
+            aria-label="Close menu"
+            onClick={() => setSidebarOpen(false)}
+            className="rounded-md p-2 text-muted-foreground hover:bg-muted"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" className="h-6 w-6">
+              <path d="M6 6 18 18M6 18 18 6" />
+            </svg>
+          </button>
+        </div>
+        <Sidebar />
+      </aside>
 
       <main className="mx-auto w-full max-w-md flex-1 px-4 pb-10">
         <section className="flex items-center justify-between pt-6 pb-5">
@@ -157,7 +208,7 @@ export default function HomePage() {
               <rect x="4" y="6" width="16" height="12" rx="3" />
               <path d="M12 2v4M9 12h.01M15 12h.01M9 16c1 .8 2 1 3 1s2-.2 3-1" />
             </svg>
-            Contact Sunny
+            Contact Sunny AI
           </button>
         </section>
 
