@@ -17,9 +17,9 @@ colorSchema: light
   <svg class="absolute bottom-0 left-0 w-full" viewBox="0 0 1280 220" preserveAspectRatio="none" style="height: 22%;">
     <defs>
       <linearGradient id="landGrad" x1="0" y1="0" x2="1" y2="0">
-        <stop offset="0%" stop-color="#fbbf24" />
-        <stop offset="50%" stop-color="#f472b6" />
-        <stop offset="100%" stop-color="#a78bfa" />
+        <stop offset="0%" stop-color="#0d9488" />
+        <stop offset="50%" stop-color="#14b8a6" />
+        <stop offset="100%" stop-color="#2dd4bf" />
       </linearGradient>
     </defs>
     <path d="M 0,220 L 0,140 C 160,90 320,150 480,110 C 640,70 800,140 960,100 C 1120,70 1240,120 1280,95 L 1280,220 Z" fill="url(#landGrad)" />
