@@ -4,30 +4,14 @@ import {
   pgTable,
   text,
   uuid,
+  date,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import { authenticatedRole } from "drizzle-orm/supabase";
 
-export const profiles = pgTable(
-  "profiles",
-  {
-    userId: uuid("user_id").primaryKey(),
-    role: text("role").notNull(),
-    createdAt: integer("created_at")
-      .notNull()
-      .default(sql`extract(epoch from now())::integer`),
-    updatedAt: integer("updated_at")
-      .notNull()
-      .default(sql`extract(epoch from now())::integer`),
-  },
-  (table) => [
-    pgPolicy("users can read own profile", {
-      for: "select",
-      to: authenticatedRole,
-      using: sql`${table.userId} = auth.uid()`,
-    }),
-  ],
-).enableRLS();
+const isPlatformAdmin = sql`(SELECT role FROM profiles WHERE user_id = auth.uid()) = 'platform_admin'`;
+const callerRole = sql`(SELECT role FROM profiles WHERE user_id = auth.uid())`;
+const callerOrganizationId = sql`(SELECT organization_id FROM profiles WHERE user_id = auth.uid())`;
 
 export const organizations = pgTable(
   "organizations",
@@ -45,8 +29,147 @@ export const organizations = pgTable(
     pgPolicy("platform admin can manage orgs", {
       for: "all",
       to: authenticatedRole,
-      using: sql`(SELECT role FROM profiles WHERE user_id = auth.uid()) = 'platform_admin'`,
-      withCheck: sql`(SELECT role FROM profiles WHERE user_id = auth.uid()) = 'platform_admin'`,
+      using: isPlatformAdmin,
+      withCheck: isPlatformAdmin,
+    }),
+    pgPolicy("organization members can read own organization", {
+      for: "select",
+      to: authenticatedRole,
+      using: sql`${table.id} = ${callerOrganizationId}`,
+    }),
+  ],
+).enableRLS();
+
+export const profiles = pgTable(
+  "profiles",
+  {
+    userId: uuid("user_id").primaryKey(),
+    role: text("role").notNull(),
+    organizationId: uuid("organization_id").references(() => organizations.id, {
+      onDelete: "set null",
+    }),
+    createdAt: integer("created_at")
+      .notNull()
+      .default(sql`extract(epoch from now())::integer`),
+    updatedAt: integer("updated_at")
+      .notNull()
+      .default(sql`extract(epoch from now())::integer`),
+  },
+  (table) => [
+    pgPolicy("users can read own profile", {
+      for: "select",
+      to: authenticatedRole,
+      using: sql`${table.userId} = auth.uid()`,
+    }),
+  ],
+).enableRLS();
+
+export const patients = pgTable(
+  "patients",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    organizationId: uuid("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    practitionerId: uuid("practitioner_id").references(
+      () => profiles.userId,
+      { onDelete: "set null" },
+    ),
+    userId: uuid("user_id").unique(),
+    name: text("name").notNull(),
+    dateOfBirth: date("date_of_birth").notNull(),
+    gender: text("gender").notNull(),
+    createdAt: integer("created_at")
+      .notNull()
+      .default(sql`extract(epoch from now())::integer`),
+    updatedAt: integer("updated_at")
+      .notNull()
+      .default(sql`extract(epoch from now())::integer`),
+  },
+  (table) => [
+    pgPolicy("platform admin can manage patients", {
+      for: "all",
+      to: authenticatedRole,
+      using: isPlatformAdmin,
+      withCheck: isPlatformAdmin,
+    }),
+    pgPolicy("organization admin can manage organization patients", {
+      for: "all",
+      to: authenticatedRole,
+      using: sql`${callerRole} = 'organization_admin' AND ${table.organizationId} = ${callerOrganizationId}`,
+      withCheck: sql`${callerRole} = 'organization_admin' AND ${table.organizationId} = ${callerOrganizationId}`,
+    }),
+    pgPolicy("practitioner can manage organization patients", {
+      for: "all",
+      to: authenticatedRole,
+      using: sql`${callerRole} = 'practitioner' AND ${table.organizationId} = ${callerOrganizationId}`,
+      withCheck: sql`${callerRole} = 'practitioner' AND ${table.organizationId} = ${callerOrganizationId}`,
+    }),
+    pgPolicy("patient can read own record", {
+      for: "select",
+      to: authenticatedRole,
+      using: sql`${table.userId} = auth.uid()`,
+    }),
+  ],
+).enableRLS();
+
+export const relatives = pgTable(
+  "relatives",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    patientId: uuid("patient_id")
+      .notNull()
+      .references(() => patients.id, { onDelete: "cascade" }),
+    userId: uuid("user_id").unique(),
+    name: text("name").notNull(),
+    relationship: text("relationship").notNull(),
+    createdAt: integer("created_at")
+      .notNull()
+      .default(sql`extract(epoch from now())::integer`),
+  },
+  (table) => [
+    pgPolicy("platform admin can manage relatives", {
+      for: "all",
+      to: authenticatedRole,
+      using: isPlatformAdmin,
+      withCheck: isPlatformAdmin,
+    }),
+    pgPolicy("patient can manage own relatives", {
+      for: "all",
+      to: authenticatedRole,
+      using: sql`EXISTS (
+        SELECT 1 FROM patients p
+        WHERE p.id = ${table.patientId} AND p.user_id = auth.uid()
+      )`,
+      withCheck: sql`EXISTS (
+        SELECT 1 FROM patients p
+        WHERE p.id = ${table.patientId} AND p.user_id = auth.uid()
+      )`,
+    }),
+    pgPolicy("relative can read own record", {
+      for: "select",
+      to: authenticatedRole,
+      using: sql`${table.userId} = auth.uid()`,
+    }),
+    pgPolicy("organization members can manage relatives of organization patients", {
+      for: "all",
+      to: authenticatedRole,
+      using: sql`
+        ${callerRole} IN ('organization_admin', 'practitioner')
+        AND EXISTS (
+          SELECT 1 FROM patients p
+          WHERE p.id = ${table.patientId}
+          AND p.organization_id = ${callerOrganizationId}
+        )
+      `,
+      withCheck: sql`
+        ${callerRole} IN ('organization_admin', 'practitioner')
+        AND EXISTS (
+          SELECT 1 FROM patients p
+          WHERE p.id = ${table.patientId}
+          AND p.organization_id = ${callerOrganizationId}
+        )
+      `,
     }),
   ],
 ).enableRLS();
