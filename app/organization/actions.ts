@@ -72,6 +72,10 @@ export async function createPractitioner(formData: FormData) {
   const admin = createAdminClient();
 
   const email = formData.get("email");
+  const specialty = formData.get("specialty");
+  const licenseNumber = formData.get("licenseNumber");
+  const npi = formData.get("npi");
+
   if (typeof email !== "string" || !email.trim()) return;
 
   const { data, error } = await admin.auth.admin.createUser({
@@ -90,6 +94,9 @@ export async function createPractitioner(formData: FormData) {
   await db.insert(practitioners).values({
     userId: data.user.id,
     organizationId: profile.organizationId,
+    specialty: typeof specialty === "string" && specialty.trim() ? specialty.trim() : null,
+    licenseNumber: typeof licenseNumber === "string" && licenseNumber.trim() ? licenseNumber.trim() : null,
+    npi: typeof npi === "string" && npi.trim() ? npi.trim() : null,
   });
 
   revalidatePath("/organization");
