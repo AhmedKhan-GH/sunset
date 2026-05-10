@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { getPatientWithRelatives, createRelative } from "../../actions";
+import { getPatientNotes, createPatientNote } from "./notes-actions";
+import { NotesSection } from "./notes-section";
 
 export default async function PatientDetailPage({
   params,
@@ -7,9 +9,13 @@ export default async function PatientDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const { patient, relatives } = await getPatientWithRelatives(id);
+  const [{ patient, relatives }, notes] = await Promise.all([
+    getPatientWithRelatives(id),
+    getPatientNotes(id),
+  ]);
 
   const addRelative = createRelative.bind(null, id);
+  const addNote = createPatientNote.bind(null, id);
 
   return (
     <div className="mx-auto w-full max-w-2xl p-8">
@@ -76,6 +82,12 @@ export default async function PatientDetailPage({
           )}
         </ul>
       </section>
+
+      <NotesSection
+        patientId={id}
+        initialNotes={notes}
+        addNoteAction={addNote}
+      />
     </div>
   );
 }
