@@ -1,15 +1,12 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import { db } from "@/lib/db";
+import { db, sql } from "@/lib/db";
 import { profiles, practitioners, patients } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { embedText, vectorLiteral } from "@/lib/llm/embed";
-import postgres from "postgres";
-
-const sql = postgres(process.env.DATABASE_URL!);
 
 async function requireOrganizationPractitioner() {
   const supabase = await createClient();
