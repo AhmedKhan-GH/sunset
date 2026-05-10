@@ -63,6 +63,87 @@ layout: default
 ---
 
 <div class="absolute inset-0 overflow-hidden pointer-events-none">
+  <div class="absolute w-[220px] h-[220px] rounded-full" style="bottom: -50px; left: -50px; background: linear-gradient(135deg, #fbbf24 0%, #f472b6 55%, #a78bfa 100%); opacity: 0.85; box-shadow: 0 0 10px 4px rgba(124,110,166,0.6), 0 0 22px 10px rgba(255,255,255,0.9), 0 0 60px 28px rgba(255,255,255,0.45);" />
+  <div class="absolute -top-32 -right-32 w-[420px] h-[420px] rounded-full opacity-22 blur-3xl" style="background: radial-gradient(circle, #fbbf24 0%, #f472b6 50%, transparent 80%);" />
+  <div class="absolute -bottom-32 -left-32 w-[420px] h-[420px] rounded-full opacity-20 blur-3xl" style="background: radial-gradient(circle, #a78bfa 0%, transparent 70%);" />
+  <svg class="absolute bottom-0 left-0 w-full" viewBox="0 0 1280 220" preserveAspectRatio="none" style="height: 18%; overflow: visible;">
+    <defs>
+      <clipPath id="skyClipTeam">
+        <path d="M 0,0 L 0,140 C 160,90 320,150 480,110 C 640,70 800,140 960,100 C 1120,70 1240,120 1280,95 L 1280,0 Z" />
+      </clipPath>
+      <filter id="edgeBlurTeam" x="-10%" y="-50%" width="120%" height="200%"><feGaussianBlur stdDeviation="8" /></filter>
+    </defs>
+    <path d="M 0,220 L 0,140 C 160,90 320,150 480,110 C 640,70 800,140 960,100 C 1120,70 1240,120 1280,95 L 1280,220 Z" fill="#c4b5fd" />
+    <g clip-path="url(#skyClipTeam)">
+      <path d="M 0,140 C 160,90 320,150 480,110 C 640,70 800,140 960,100 C 1120,70 1240,120 1280,95" fill="none" stroke="#7c6ea6" stroke-width="16" filter="url(#edgeBlurTeam)" />
+    </g>
+  </svg>
+</div>
+
+<div class="relative h-full grid grid-rows-[auto_1fr_auto] px-16 py-10 z-10">
+
+<div class="flex flex-col justify-center items-center text-center -mt-6">
+<div class="text-[2.6rem] leading-[1.1] font-semibold tracking-tight text-[#1f2937] mb-4">The team behind Sunset</div>
+<div class="text-[1.05rem] leading-relaxed text-[#1f2937]/65 font-medium mb-12" style="max-width: 52ch;">Four builders united by a shared belief that end-of-life care deserves the same craft we bring to any frontier problem.</div>
+<div class="grid grid-cols-4 gap-5" style="max-width: 64rem;">
+
+<div class="relative px-5 py-6 rounded-2xl bg-white/65 backdrop-blur border border-white/70 text-center overflow-hidden">
+<div class="absolute top-0 left-0 w-full h-1" style="background: linear-gradient(90deg, #fbbf24, #fcd34d);" />
+<div class="mx-auto mb-3 w-14 h-14 rounded-full flex items-center justify-center text-white text-[1rem] font-extrabold" style="background: linear-gradient(135deg, #fbbf24, #f472b6);">CR</div>
+<div class="text-[1.05rem] font-extrabold text-[#1f2937] leading-tight mb-1">Chris Rios</div>
+<div class="text-[0.78rem] text-[#1f2937]/65 leading-snug">UC Irvine</div>
+<div class="text-[0.72rem] text-[#1f2937]/55 leading-snug mt-0.5 break-all">crios8@uci.edu</div>
+</div>
+
+<div class="relative px-5 py-6 rounded-2xl bg-white/65 backdrop-blur border border-white/70 text-center overflow-hidden">
+<div class="absolute top-0 left-0 w-full h-1" style="background: linear-gradient(90deg, #f472b6, #fb7185);" />
+<div class="mx-auto mb-3 w-14 h-14 rounded-full flex items-center justify-center text-white text-[1rem] font-extrabold" style="background: linear-gradient(135deg, #f472b6, #a78bfa);">AK</div>
+<div class="text-[1.05rem] font-extrabold text-[#1f2937] leading-tight mb-1">Ahmed Khan</div>
+<div class="text-[0.78rem] text-[#1f2937]/65 leading-snug">UC Davis</div>
+<div class="text-[0.72rem] text-[#1f2937]/55 leading-snug mt-0.5 break-all">aekhan@ucdavis.edu</div>
+</div>
+
+<div class="relative px-5 py-6 rounded-2xl bg-white/65 backdrop-blur border border-white/70 text-center overflow-hidden">
+<div class="absolute top-0 left-0 w-full h-1" style="background: linear-gradient(90deg, #a78bfa, #c4b5fd);" />
+<div class="mx-auto mb-3 w-14 h-14 rounded-full flex items-center justify-center text-white text-[1rem] font-extrabold" style="background: linear-gradient(135deg, #a78bfa, #c4b5fd);">SK</div>
+<div class="text-[1.05rem] font-extrabold text-[#1f2937] leading-tight mb-1">Shreyas Kiran</div>
+<div class="text-[0.78rem] text-[#1f2937]/65 leading-snug">UC Santa Cruz</div>
+<div class="text-[0.72rem] text-[#1f2937]/55 leading-snug mt-0.5 break-all">sjkiran@ucsc.edu</div>
+</div>
+
+<div class="relative px-5 py-6 rounded-2xl bg-white/65 backdrop-blur border border-white/70 text-center overflow-hidden">
+<div class="absolute top-0 left-0 w-full h-1" style="background: linear-gradient(90deg, #fbbf24, #a78bfa);" />
+<div class="mx-auto mb-3 w-14 h-14 rounded-full flex items-center justify-center text-white text-[1rem] font-extrabold" style="background: linear-gradient(135deg, #fbbf24, #a78bfa);">MS</div>
+<div class="text-[1.05rem] font-extrabold text-[#1f2937] leading-tight mb-1">Micah Sun</div>
+<div class="text-[0.78rem] text-[#1f2937]/65 leading-snug">UC Davis</div>
+<div class="text-[0.72rem] text-[#1f2937]/55 leading-snug mt-0.5 break-all">mtesun@ucdavis.edu</div>
+</div>
+
+</div>
+</div>
+
+  <div class="flex items-end justify-between text-[0.72rem] tracking-[0.18em] uppercase text-[#1f2937]/55 font-semibold">
+    <div class="flex items-center gap-2">
+      <span class="inline-block w-1.5 h-1.5 rounded-full bg-[#1f2937]/55" />
+      HackDavis 2026
+    </div>
+  </div>
+
+</div>
+
+<style>
+.slidev-layout {
+  background: radial-gradient(ellipse at 50% 40%, #fde7ee 0%, #f8e1ed 35%, #f4dceb 70%, #efd6e8 100%);
+  overflow: hidden;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+</style>
+
+---
+layout: default
+---
+
+<div class="absolute inset-0 overflow-hidden pointer-events-none">
   <div class="absolute right-[8%] w-[260px] h-[260px] rounded-full" style="top: 14%; background: linear-gradient(135deg, #fbbf24 0%, #f472b6 55%, #a78bfa 100%); opacity: 0.85; box-shadow: 0 0 10px 4px rgba(124,110,166,0.7), 0 0 22px 10px rgba(255,255,255,0.95), 0 0 60px 28px rgba(255,255,255,0.55), 0 0 120px 60px rgba(255,255,255,0.3);" />
   <div class="absolute -top-32 -right-32 w-[420px] h-[420px] rounded-full opacity-22 blur-3xl" style="background: radial-gradient(circle, #fbbf24 0%, #f472b6 50%, transparent 80%);" />
   <div class="absolute -bottom-32 -left-32 w-[420px] h-[420px] rounded-full opacity-20 blur-3xl" style="background: radial-gradient(circle, #a78bfa 0%, transparent 70%);" />
