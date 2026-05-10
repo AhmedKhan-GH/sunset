@@ -213,7 +213,12 @@ function ChatMessages({
         {status === "submitted" && (
           <div className="flex justify-start">
             <div className="rounded-lg bg-zinc-100 px-4 py-2 text-sm text-zinc-400 dark:bg-zinc-800">
-              <span className="animate-pulse">Thinking...</span>
+              Thinking
+              <span className="inline-flex w-4">
+                <span className="animate-[pulse_1.4s_ease-in-out_infinite]">.</span>
+                <span className="animate-[pulse_1.4s_ease-in-out_0.2s_infinite]">.</span>
+                <span className="animate-[pulse_1.4s_ease-in-out_0.4s_infinite]">.</span>
+              </span>
             </div>
           </div>
         )}
