@@ -353,38 +353,6 @@ layout: default
   </svg>
 </div>
 
-<div class="relative h-full grid grid-rows-[auto_1fr_auto] px-16 py-10 z-10">
-
-<div class="flex flex-col justify-start -mt-4">
-<div class="text-[2.3rem] leading-[1.1] font-semibold tracking-tight text-[#1f2937] mb-2" style="max-width: 22ch;">Early signals, real momentum.</div>
-<div class="text-[0.95rem] leading-relaxed text-[#1f2937]/65 font-medium mb-5" style="max-width: 56ch;">24 hours from idea to working demo — and a dozen conversations with the people we'll serve.</div>
-<div class="grid grid-cols-4 gap-4 mb-4" style="max-width: 60rem;"><div class="px-4 py-4 rounded-2xl bg-white/65 backdrop-blur border border-white/70"><div class="text-[1.8rem] font-extrabold leading-none mb-1.5" style="background: linear-gradient(135deg, #fbbf24, #f472b6); -webkit-background-clip: text; background-clip: text; color: transparent;">24h</div><div class="text-[0.78rem] font-semibold text-[#1f2937]/85 mb-1">Built &amp; demoable</div><div class="text-[0.72rem] text-[#1f2937]/55 leading-snug">From blank repo to running on a clinician's laptop.</div></div><div class="px-4 py-4 rounded-2xl bg-white/65 backdrop-blur border border-white/70"><div class="text-[1.8rem] font-extrabold leading-none mb-1.5" style="background: linear-gradient(135deg, #f472b6, #a78bfa); -webkit-background-clip: text; background-clip: text; color: transparent;">12</div><div class="text-[0.78rem] font-semibold text-[#1f2937]/85 mb-1">User interviews</div><div class="text-[0.72rem] text-[#1f2937]/55 leading-snug">With nurses, social workers &amp; family caregivers.</div></div><div class="px-4 py-4 rounded-2xl bg-white/65 backdrop-blur border border-white/70"><div class="text-[1.8rem] font-extrabold leading-none mb-1.5" style="background: linear-gradient(135deg, #a78bfa, #c4b5fd); -webkit-background-clip: text; background-clip: text; color: transparent;">3</div><div class="text-[0.78rem] font-semibold text-[#1f2937]/85 mb-1">Pilot conversations</div><div class="text-[0.72rem] text-[#1f2937]/55 leading-snug">With Bay Area hospice agencies actively recruiting.</div></div><div class="px-4 py-4 rounded-2xl bg-white/65 backdrop-blur border border-white/70"><div class="text-[1.8rem] font-extrabold leading-none mb-1.5" style="background: linear-gradient(135deg, #c4b5fd, #fbbf24); -webkit-background-clip: text; background-clip: text; color: transparent;">100%</div><div class="text-[0.78rem] font-semibold text-[#1f2937]/85 mb-1">Local</div><div class="text-[0.72rem] text-[#1f2937]/55 leading-snug">Patient data stays on the agency's machine. Always.</div></div></div>
-<div class="px-6 py-4 rounded-2xl bg-white/45 backdrop-blur border border-white/60" style="max-width: 60rem;"><div class="text-[1rem] italic text-[#1f2937]/80 leading-snug mb-2">"It would give me back the part of nursing I actually love — being with patients, not the laptop."</div><div class="text-[0.72rem] tracking-[0.18em] uppercase text-[#1f2937]/55 font-semibold">Hospice RN · pilot interview</div></div>
-</div>
-
-  <div class="flex items-end justify-between text-[0.72rem] tracking-[0.18em] uppercase text-[#1f2937]/55 font-semibold">
-    <div class="flex items-center gap-2">
-      <span class="inline-block w-1.5 h-1.5 rounded-full bg-[#1f2937]/55" />
-      HackDavis 2026
-    </div>
-  </div>
-
-</div>
-
-<style>
-.slidev-layout {
-  background: radial-gradient(ellipse at 50% 40%, #fde7ee 0%, #f8e1ed 35%, #f4dceb 70%, #efd6e8 100%);
-  overflow: hidden;
-  font-family: 'Inter', system-ui, sans-serif;
-}
-</style>
-
-
-
----
-layout: default
----
-
 <div class="absolute inset-0 overflow-hidden pointer-events-none">
   <div class="absolute w-[200px] h-[200px] rounded-full" style="top: 6%; left: 6%; background: linear-gradient(135deg, #fbbf24 0%, #f472b6 55%, #a78bfa 100%); opacity: 0.85; box-shadow: 0 0 10px 4px rgba(124,110,166,0.6), 0 0 22px 10px rgba(255,255,255,0.9), 0 0 60px 28px rgba(255,255,255,0.45);" />
   <div class="absolute -top-32 -right-32 w-[420px] h-[420px] rounded-full opacity-22 blur-3xl" style="background: radial-gradient(circle, #fbbf24 0%, #f472b6 50%, transparent 80%);" />
