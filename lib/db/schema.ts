@@ -1,5 +1,6 @@
 import {
   integer,
+  jsonb,
   pgPolicy,
   pgTable,
   text,
@@ -217,6 +218,69 @@ export const relatives = pgTable(
           AND p.organization_id = ${callerOrganizationId}
         )
       `,
+    }),
+  ],
+).enableRLS();
+
+export const conversations = pgTable(
+  "conversations",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: uuid("user_id").notNull(),
+    title: text("title"),
+    createdAt: integer("created_at")
+      .notNull()
+      .default(sql`extract(epoch from now())::integer`),
+    updatedAt: integer("updated_at")
+      .notNull()
+      .default(sql`extract(epoch from now())::integer`),
+  },
+  (table) => [
+    pgPolicy("users can read own conversations", {
+      for: "select",
+      to: authenticatedRole,
+      using: sql`${table.userId} = auth.uid()`,
+    }),
+    pgPolicy("users can create own conversations", {
+      for: "insert",
+      to: authenticatedRole,
+      withCheck: sql`${table.userId} = auth.uid()`,
+    }),
+  ],
+).enableRLS();
+
+export const messages = pgTable(
+  "messages",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    conversationId: uuid("conversation_id")
+      .notNull()
+      .references(() => conversations.id, { onDelete: "cascade" }),
+    role: text("role").notNull(),
+    content: text("content").notNull(),
+    toolName: text("tool_name"),
+    toolInput: jsonb("tool_input"),
+    toolOutput: jsonb("tool_output"),
+    createdAt: integer("created_at")
+      .notNull()
+      .default(sql`extract(epoch from now())::integer`),
+  },
+  (table) => [
+    pgPolicy("users can read own conversation messages", {
+      for: "select",
+      to: authenticatedRole,
+      using: sql`EXISTS (
+        SELECT 1 FROM conversations c
+        WHERE c.id = ${table.conversationId} AND c.user_id = auth.uid()
+      )`,
+    }),
+    pgPolicy("users can insert own conversation messages", {
+      for: "insert",
+      to: authenticatedRole,
+      withCheck: sql`EXISTS (
+        SELECT 1 FROM conversations c
+        WHERE c.id = ${table.conversationId} AND c.user_id = auth.uid()
+      )`,
     }),
   ],
 ).enableRLS();
