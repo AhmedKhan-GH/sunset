@@ -12,6 +12,7 @@ Module-by-module log of Supabase capability work. One file per module from `SUPA
 | 6–12 | Storage / Edge Functions / pg_net / Vault / Webhooks | (out of scope for this branch) | — |
 | 13 | Logs / audit | ✅ done | [`modules/13-logs-audit.md`](modules/13-logs-audit.md) |
 | — | Clinician-side search UI | ✅ done | [`modules/clinician-search.md`](modules/clinician-search.md) |
+| — | Negative search (filter-out) | ✅ done | [`modules/negative-search.md`](modules/negative-search.md) |
 
 ## How to read these docs
 
