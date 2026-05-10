@@ -55,7 +55,7 @@ export function ChatPanel() {
     setChatKey((k) => k + 1);
   }
 
-  function startNewChat() {
+  function clearChat() {
     setActiveConversationId(null);
     setInitialMessages([]);
     setChatKey((k) => k + 1);
@@ -75,10 +75,10 @@ export function ChatPanel() {
         <div className="flex items-center justify-between border-b px-3 py-2">
           <span className="text-xs font-medium text-zinc-500">History</span>
           <button
-            onClick={startNewChat}
+            onClick={clearChat}
             className="text-xs text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
           >
-            + New
+            Clear
           </button>
         </div>
         <div className="flex-1 overflow-y-auto">
@@ -92,7 +92,11 @@ export function ChatPanel() {
                   : "hover:bg-zinc-50 dark:hover:bg-zinc-900"
               }`}
             >
-              {c.title || "New conversation"}
+              {c.title
+                ? c.title.length > 60
+                  ? c.title.slice(0, 60) + "…"
+                  : c.title
+                : "New conversation"}
             </button>
           ))}
         </div>
@@ -124,7 +128,7 @@ function ChatMessages({
 }) {
   const [input, setInput] = useState("");
   const convIdRef = useRef(conversationId);
-  const createdRef = useRef(false);
+  const pendingTitleRef = useRef<string | null>(null);
 
   const { messages, sendMessage, status, error } = useChat({
     ...(conversationId ? { id: conversationId } : {}),
@@ -132,6 +136,15 @@ function ChatMessages({
     transport: new DefaultChatTransport({
       api: "/api/chat",
       body: () => ({ conversationId: convIdRef.current }),
+      fetch: async (url, init) => {
+        const res = await fetch(url, init);
+        const newConvId = res.headers.get("X-Conversation-Id");
+        if (newConvId && !convIdRef.current) {
+          convIdRef.current = newConvId;
+          onConversationCreated(newConvId, pendingTitleRef.current);
+        }
+        return res;
+      },
     }),
     onFinish() {
       onMessageSent();
@@ -151,18 +164,8 @@ function ChatMessages({
     if (!text || isLoading) return;
     setInput("");
 
-    if (!convIdRef.current && !createdRef.current) {
-      createdRef.current = true;
-      const res = await fetch("/api/conversations", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: text.slice(0, 100) }),
-      });
-      if (res.ok) {
-        const conv = await res.json();
-        convIdRef.current = conv.id;
-        onConversationCreated(conv.id, conv.title);
-      }
+    if (!convIdRef.current) {
+      pendingTitleRef.current = text.slice(0, 60);
     }
 
     await sendMessage({ text });
