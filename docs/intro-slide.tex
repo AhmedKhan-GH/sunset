@@ -1,0 +1,34 @@
+\documentclass[aspectratio=169]{beamer}
+
+\usetheme{default}
+\setbeamertemplate{navigation symbols}{}
+
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+
+% Brand palette — pulled from app/globals.css on origin/color-scheme
+\definecolor{bg}{HTML}{FAFAFA}
+\definecolor{textDark}{HTML}{1F2937}
+\definecolor{brandPurple}{HTML}{7C3AED}
+
+\setbeamercolor{background canvas}{bg=bg}
+\setbeamercolor{normal text}{fg=textDark}
+
+% Logo — public/sunset-logo.svg, converted to PDF via:
+%   rsvg-convert -f pdf -o docs/sunset-logo.pdf public/sunset-logo.svg
+\graphicspath{{.}}
+
+\begin{document}
+
+\begin{frame}[plain]
+  \centering
+  \vfill
+  \includegraphics[width=0.35\textwidth]{sunset-logo}\\[1.5em]
+
+  {\fontsize{56}{60}\selectfont\textbf{\color{brandPurple}Sunset}}\\[0.6em]
+  {\Large\color{textDark}AI-powered hospice care}\\[3em]
+  {\small\textbf{\color{brandPurple}DavisHacks 2026}}
+  \vfill
+\end{frame}
+
+\end{document}
