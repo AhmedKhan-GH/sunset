@@ -12,7 +12,8 @@
       "Bash(pkill -f \"next dev\")",
       "Bash(git -C \"/Users/user/Documents/DavisHacks 2026/sunset\" branch -a)",
       "Bash(git -C \"/Users/user/Documents/DavisHacks 2026/sunset\" log --oneline origin/color-scheme -20)",
-      "Bash(git -C \"/Users/user/Documents/DavisHacks 2026/sunset\" show origin/color-scheme:app/globals.css)"
+      "Bash(git -C \"/Users/user/Documents/DavisHacks 2026/sunset\" show origin/color-scheme:app/globals.css)",
+      "Bash(npx slidev *)"
     ]
   }
 }
