@@ -1,12 +1,13 @@
-import { getPatients, createPatient } from "../actions";
+import { getPatients, getMyOrganization, createPatient } from "../actions";
 import Link from "next/link";
 
 export default async function PatientsPage() {
-  const patients = await getPatients();
+  const [patients, org] = await Promise.all([getPatients(), getMyOrganization()]);
 
   return (
     <div className="mx-auto w-full max-w-2xl p-8">
       <h1 className="text-2xl font-semibold">Patients</h1>
+      {org && <p className="mt-1 text-sm text-zinc-500">{org.name}</p>}
 
       <form action={createPatient} className="mt-6 flex flex-col gap-3">
         <div className="flex gap-2">

@@ -3,7 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { db } from "@/lib/db";
-import { profiles, patients, relatives } from "@/lib/db/schema";
+import { profiles, patients, relatives, organizations } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
@@ -69,6 +69,15 @@ export async function createPractitioner(formData: FormData) {
 }
 
 // ── Patients ─────────────────────────────────────────────────────────────────
+
+export async function getMyOrganization() {
+  const profile = await requireOrgUser();
+  const [org] = await db
+    .select()
+    .from(organizations)
+    .where(eq(organizations.id, profile.orgId));
+  return org;
+}
 
 export async function getPatients() {
   const profile = await requireOrgUser();
