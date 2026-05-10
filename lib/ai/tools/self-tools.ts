@@ -1,10 +1,9 @@
 import { tool } from "ai";
 import { z } from "zod";
 import { eq } from "drizzle-orm";
-import postgres from "postgres";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { db } from "@/lib/db";
+import { db, sql } from "@/lib/db";
 import {
   organizations,
   profiles,
@@ -12,8 +11,6 @@ import {
   patients,
   relatives,
 } from "@/lib/db/schema";
-
-const sql = postgres(process.env.DATABASE_URL!);
 
 type CallerContext = {
   userId: string;

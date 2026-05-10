@@ -10,7 +10,6 @@ import { embedText, vectorLiteral } from "@/lib/llm/embed";
 
 type NoteContext = {
   userId: string;
-  supabase: Awaited<ReturnType<typeof createClient>>;
   organizationId: string;
   patientId?: string;
   role: string;
@@ -34,7 +33,6 @@ export async function resolveNoteContext(): Promise<NoteContext> {
     if (!profile.organizationId) redirect("/");
     return {
       userId: user.id,
-      supabase,
       organizationId: profile.organizationId,
       role: profile.role,
     };
@@ -48,7 +46,6 @@ export async function resolveNoteContext(): Promise<NoteContext> {
     if (!patient) redirect("/");
     return {
       userId: user.id,
-      supabase,
       organizationId: patient.organizationId,
       patientId: patient.id,
       role: profile.role,
@@ -68,7 +65,6 @@ export async function resolveNoteContext(): Promise<NoteContext> {
     if (!patient) redirect("/");
     return {
       userId: user.id,
-      supabase,
       organizationId: patient.organizationId,
       patientId: patient.id,
       role: profile.role,
@@ -81,8 +77,9 @@ export async function resolveNoteContext(): Promise<NoteContext> {
 export async function getNotes(patientId?: string) {
   const ctx = await resolveNoteContext();
 
-  const patientFilter = patientId
-    ? sql`and n.patient_id = ${patientId}`
+  const effectivePatientId = patientId ?? ctx.patientId;
+  const patientFilter = effectivePatientId
+    ? sql`and n.patient_id = ${effectivePatientId}`
     : sql``;
 
   const results = await sql`
@@ -111,7 +108,13 @@ export async function getNotes(patientId?: string) {
 }
 
 export async function createNote(patientId: string, formData: FormData) {
-  const { userId, supabase, organizationId } = await resolveNoteContext();
+  const ctx = await resolveNoteContext();
+
+  if (ctx.role === "patient" || ctx.role === "relative") {
+    if (patientId !== ctx.patientId) {
+      throw new Error("Not authorized to create notes for this patient.");
+    }
+  }
 
   const content = formData.get("content");
   if (typeof content !== "string" || !content.trim()) return;
@@ -119,15 +122,10 @@ export async function createNote(patientId: string, formData: FormData) {
   const embedding = await embedText(content.trim());
   const vec = vectorLiteral(embedding);
 
-  const { error } = await supabase.from("patient_notes").insert({
-    organization_id: organizationId,
-    patient_id: patientId,
-    author_id: userId,
-    content: content.trim(),
-    embedding: vec,
-  });
-
-  if (error) throw error;
+  await sql`
+    insert into public.patient_notes (organization_id, patient_id, author_id, content, embedding)
+    values (${ctx.organizationId}, ${patientId}, ${ctx.userId}, ${content.trim()}, ${vec}::vector)
+  `;
 }
 
 export async function searchNotes(
