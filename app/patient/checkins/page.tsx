@@ -3,7 +3,16 @@ import { redirect } from "next/navigation";
 import {
   listMyPendingCheckins,
   listMyRecentCompletedCheckins,
+  startSelfCheckin,
+  getMyCheckinSchedule,
 } from "@/lib/checkins/actions";
+import { ScheduleSettings } from "./schedule-settings";
+
+async function startCheckinAction() {
+  "use server";
+  const { id } = await startSelfCheckin();
+  redirect(`/patient/checkins/${id}`);
+}
 
 type SymptomKey =
   | "pain_score"
@@ -29,21 +38,35 @@ const SYMPTOMS: { key: SymptomKey; label: string; hiGood?: boolean }[] = [
 export default async function PatientCheckinsPage() {
   let pending: Awaited<ReturnType<typeof listMyPendingCheckins>>;
   let recent: Awaited<ReturnType<typeof listMyRecentCompletedCheckins>>;
+  let schedule: Awaited<ReturnType<typeof getMyCheckinSchedule>>;
   try {
     // Sequential to avoid auth-race; safe with cached resolveNoteContext
     pending = await listMyPendingCheckins();
     recent = await listMyRecentCompletedCheckins(7);
+    schedule = await getMyCheckinSchedule();
   } catch {
     redirect("/");
   }
 
   return (
     <div className="mx-auto w-full max-w-3xl p-8">
-      <h1 className="text-2xl font-semibold">Check-ins</h1>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Quick symptom check-ins are scheduled twice a day. Filling them out
-        keeps your care team up to date — about a minute each.
-      </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold">Check-ins</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Quick symptom check-ins are scheduled twice a day. Filling them out
+            keeps your care team up to date — about a minute each.
+          </p>
+        </div>
+        <form action={startCheckinAction}>
+          <button
+            type="submit"
+            className="whitespace-nowrap rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white transition hover:brightness-110"
+          >
+            Start a check-in
+          </button>
+        </form>
+      </div>
 
       <section className="mt-10">
         <h2 className="text-lg font-semibold">Waiting for you</h2>
@@ -77,6 +100,11 @@ export default async function PatientCheckinsPage() {
             ))}
           </ul>
         )}
+      </section>
+
+      <section className="mt-10">
+        <h2 className="text-lg font-semibold">Schedule</h2>
+        <ScheduleSettings initial={schedule} />
       </section>
 
       {recent.length >= 2 && (

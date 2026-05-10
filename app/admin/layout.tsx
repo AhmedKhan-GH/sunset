@@ -37,7 +37,7 @@ export default async function AdminLayout({
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-6 px-6 py-3">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
-              <SunsetLogo className="h-8 w-auto" gradientId="adminHeader" />
+              <SunsetLogo className="h-8 w-auto -translate-y-1" gradientId="adminHeader" />
               <span className="text-sm font-bold tracking-tight">SUNSET</span>
             </div>
           </div>

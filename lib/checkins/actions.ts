@@ -1,12 +1,11 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import { db } from "@/lib/db";
+import { db, sql } from "@/lib/db";
 import { profiles, patients } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
-import postgres from "postgres";
-
-const sql = postgres(process.env.DATABASE_URL!);
+import { redirect } from "next/navigation";
+import { embedText, vectorLiteral } from "@/lib/llm/embed";
 
 // ── Types ─────────────────────────────────────────────────────────────────
 
@@ -161,9 +160,12 @@ export async function submitCheckin(input: {
   scores: SymptomScores;
   notes: string;
 }): Promise<void> {
-  await requireRole("patient");
+  const { user } = await requireRole("patient");
   const supabase = await createClient();
-  const { error } = await supabase
+  const trimmedNotes = input.notes.trim() || null;
+
+  // 1. Update the checkin row with scores + notes
+  const { data: updated, error } = await supabase
     .from("symptom_checkins")
     .update({
       status: "completed",
@@ -176,11 +178,140 @@ export async function submitCheckin(input: {
       appetite_score: input.scores.appetite_score,
       mood_score: input.scores.mood_score,
       sleep_score: input.scores.sleep_score,
-      notes: input.notes.trim() || null,
+      notes: trimmedNotes,
     })
     .eq("id", input.checkinId)
-    .eq("status", "pending");
+    .eq("status", "pending")
+    .select()
+    .single();
   if (error) throw new Error(error.message);
+  if (!updated) return;
+
+  // 2. Mirror into patient_notes so the practitioner sees it on the
+  //    notes feed and the RAG/chat can surface it. Embeds the content.
+  const scoreSummary = [
+    `pain ${input.scores.pain_score}`,
+    `nausea ${input.scores.nausea_score}`,
+    `SOB ${input.scores.shortness_of_breath_score}`,
+    `anxiety ${input.scores.anxiety_score}`,
+    `fatigue ${input.scores.fatigue_score}`,
+    `appetite ${input.scores.appetite_score}`,
+    `mood ${input.scores.mood_score}`,
+    `sleep ${input.scores.sleep_score}`,
+  ].join(", ");
+
+  const noteContent = trimmedNotes
+    ? `[${updated.scheduled_kind} check-in] ${scoreSummary}. Patient says: "${trimmedNotes}"`
+    : `[${updated.scheduled_kind} check-in] ${scoreSummary}.`;
+
+  const embedding = await embedText(noteContent);
+  const vec = vectorLiteral(embedding);
+
+  await sql`
+    insert into public.patient_notes
+      (organization_id, patient_id, author_id, content, embedding)
+    values
+      (${updated.organization_id}, ${updated.patient_id}, ${user.id}, ${noteContent}, ${vec}::vector)
+  `;
+}
+
+/**
+ * submitCheckin + server-side redirect to the listing page. Use this from
+ * the form so the client navigation happens via a 303 redirect rather than
+ * router.push() inside useTransition (which can leave the pending state
+ * stuck if router.refresh is also called).
+ */
+export async function submitCheckinAndRedirect(input: {
+  checkinId: string;
+  scores: SymptomScores;
+  notes: string;
+}): Promise<never> {
+  await submitCheckin(input);
+  redirect("/patient/checkins");
+}
+
+/**
+ * Patient's preferred morning + evening check-in times (stored as UTC).
+ * The dispatcher cron job (every 15 min) reads these and creates pending
+ * check-ins when they match.
+ */
+export type CheckinSchedule = {
+  morning_checkin_time: string; // "HH:MM" — UTC
+  evening_checkin_time: string; // "HH:MM" — UTC
+};
+
+function timeToHHMM(t: unknown): string {
+  if (typeof t !== "string") return "08:00";
+  // Postgres returns "HH:MM:SS" — strip seconds for the form.
+  return t.slice(0, 5);
+}
+
+export async function getMyCheckinSchedule(): Promise<CheckinSchedule> {
+  const { user } = await requireRole("patient");
+  const rows = await sql<{ morning_checkin_time: unknown; evening_checkin_time: unknown }[]>`
+    select morning_checkin_time, evening_checkin_time
+      from public.patients
+     where user_id = ${user.id}
+     limit 1
+  `;
+  return {
+    morning_checkin_time: timeToHHMM(rows[0]?.morning_checkin_time ?? "08:00"),
+    evening_checkin_time: timeToHHMM(rows[0]?.evening_checkin_time ?? "20:00"),
+  };
+}
+
+export async function updateMyCheckinSchedule(input: CheckinSchedule): Promise<void> {
+  const { user } = await requireRole("patient");
+  const morning = input.morning_checkin_time;
+  const evening = input.evening_checkin_time;
+  if (!/^\d{2}:\d{2}$/.test(morning) || !/^\d{2}:\d{2}$/.test(evening)) {
+    throw new Error("Times must be in HH:MM format");
+  }
+  await sql`
+    update public.patients
+       set morning_checkin_time = ${morning}::time,
+           evening_checkin_time = ${evening}::time
+     where user_id = ${user.id}
+  `;
+}
+
+/**
+ * Patient-initiated check-in. Creates a pending checkin row for the
+ * calling patient (kind='manual') and returns its id so the UI can
+ * navigate straight to the form.
+ */
+export async function startSelfCheckin(): Promise<{ id: string }> {
+  const { user, profile } = await requireRole("patient");
+  const [patient] = await db
+    .select()
+    .from(patients)
+    .where(eq(patients.userId, user.id));
+  if (!patient) throw new Error("No patient record found for this user");
+
+  // A patient can have at most one pending check-in at a time (enforced
+  // by a unique partial index in the DB). If one already exists, return
+  // its id so the UI navigates to it instead of hitting the constraint.
+  const existing = await sql<{ id: string }[]>`
+    select id from public.symptom_checkins
+     where patient_id = ${patient.id} and status = 'pending'
+     limit 1
+  `;
+  if (existing.length > 0) return { id: existing[0].id };
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("symptom_checkins")
+    .insert({
+      patient_id: patient.id,
+      organization_id: patient.organizationId,
+      scheduled_at: new Date().toISOString(),
+      scheduled_kind: "manual",
+      status: "pending",
+    })
+    .select("id")
+    .single();
+  if (error) throw new Error(error.message);
+  return { id: data.id };
 }
 
 // ── Practitioner / org admin actions ─────────────────────────────────────
@@ -222,6 +353,32 @@ export async function listOrgRecentCheckins(limit = 50): Promise<CheckinWithPati
   }));
 }
 
+export async function listPatientCheckins(
+  patientId: string,
+  limit = 20,
+): Promise<Checkin[]> {
+  const { profile } = await requireRole("practitioner", "organization_admin");
+  if (!profile.organizationId) return [];
+
+  const [patient] = await db
+    .select()
+    .from(patients)
+    .where(eq(patients.id, patientId));
+  if (!patient || patient.organizationId !== profile.organizationId) {
+    throw new Error("Patient not in your organization");
+  }
+
+  const rows = await sql<Record<string, unknown>[]>`
+    select * from public.symptom_checkins
+     where patient_id = ${patientId}
+       and organization_id = ${profile.organizationId}
+     order by
+       case when status = 'completed' then completed_at else scheduled_at end desc
+     limit ${limit}
+  `;
+  return rows.map(rowToCheckin);
+}
+
 export async function listOrgPatientsForTrigger(): Promise<{ id: string; name: string }[]> {
   const { profile } = await requireRole("practitioner", "organization_admin");
   if (!profile.organizationId) return [];
@@ -243,6 +400,18 @@ export async function triggerManualCheckin(patientId: string): Promise<{ id: str
     .where(eq(patients.id, patientId));
   if (!patient || patient.organizationId !== profile.organizationId) {
     throw new Error("Patient not found in your organization");
+  }
+
+  // A patient can have at most one pending check-in at a time (enforced
+  // by a unique partial index in the DB). Bail out cleanly if one
+  // already exists rather than letting the constraint fire.
+  const existing = await sql<{ id: string }[]>`
+    select id from public.symptom_checkins
+     where patient_id = ${patientId} and status = 'pending'
+     limit 1
+  `;
+  if (existing.length > 0) {
+    throw new Error("Patient already has a pending check-in");
   }
 
   const supabase = await createClient();

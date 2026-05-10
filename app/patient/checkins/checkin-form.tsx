@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
-import { submitCheckin, type SymptomScores } from "@/lib/checkins/actions";
+import {
+  submitCheckinAndRedirect,
+  type SymptomScores,
+} from "@/lib/checkins/actions";
 
 const SYMPTOMS: {
   key: keyof SymptomScores;
@@ -32,7 +34,6 @@ const ZERO: SymptomScores = {
 };
 
 export function CheckinForm({ checkinId }: { checkinId: string }) {
-  const router = useRouter();
   const [scores, setScores] = useState<SymptomScores>(ZERO);
   const [notes, setNotes] = useState("");
   const [pending, startTransition] = useTransition();
@@ -43,10 +44,12 @@ export function CheckinForm({ checkinId }: { checkinId: string }) {
     setError("");
     startTransition(async () => {
       try {
-        await submitCheckin({ checkinId, scores, notes });
-        router.push("/patient/checkins");
-        router.refresh();
+        // Server action calls redirect() internally — Next.js processes the
+        // 303 redirect, browser navigates, the transition resolves.
+        await submitCheckinAndRedirect({ checkinId, scores, notes });
       } catch (e: any) {
+        // NEXT_REDIRECT throws are caught by Next.js itself before reaching
+        // here; only real errors land here.
         setError(e.message ?? String(e));
       }
     });

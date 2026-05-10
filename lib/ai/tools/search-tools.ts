@@ -1,10 +1,8 @@
 import { tool } from "ai";
 import { z } from "zod";
-import postgres from "postgres";
+import { sql } from "@/lib/db";
 import { getCallerContext } from "@/lib/ai/auth";
 import { embedText, vectorLiteral } from "@/lib/llm/embed";
-
-const sql = postgres(process.env.DATABASE_URL!);
 
 export const searchNotesTool = tool({
   description: [

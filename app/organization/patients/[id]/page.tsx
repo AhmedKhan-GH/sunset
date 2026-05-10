@@ -1,8 +1,12 @@
 import Link from "next/link";
 import { getPatientWithRelatives, createRelative } from "../../actions";
-import { getNotes, createNote, resolveNoteContext } from "@/lib/notes/actions";
+import { getNotes, createNote } from "@/lib/notes/actions";
+import { resolveNoteContext } from "@/lib/notes/context";
+import { listPatientCheckins } from "@/lib/checkins/actions";
 import { NotesViewer } from "@/components/notes-viewer";
 import { InviteForm } from "@/components/invite-form";
+import { PatientDetailTabs } from "./tabs";
+import { PatientCheckinsList } from "./checkins-list";
 
 export default async function PatientDetailPage({
   params,
@@ -10,11 +14,11 @@ export default async function PatientDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [{ patient, relatives }, notes, ctx] = await Promise.all([
-    getPatientWithRelatives(id),
-    getNotes(id),
-    resolveNoteContext(),
-  ]);
+  // Sequential to avoid auth-call races (see lib/notes/context.ts)
+  const { patient, relatives } = await getPatientWithRelatives(id);
+  const ctx = await resolveNoteContext();
+  const notes = await getNotes(id);
+  const checkins = await listPatientCheckins(id, 30);
 
   const addRelative = createRelative.bind(null, id);
   const addNote = createNote.bind(null, id);
@@ -111,28 +115,41 @@ export default async function PatientDetailPage({
       </section>
 
       <section className="mt-10">
-        <h2 className="text-lg font-semibold">Notes</h2>
-        <div className="mt-4">
-          <NotesViewer
-            initialNotes={notes}
-            fixedPatientId={id}
-            userId={ctx.userId}
-            organizationId={ctx.organizationId}
-            showAddForm
-            addNotePlaceholder="Add a clinical note..."
-            addNoteAction={addNote}
-          />
-        </div>
+        <PatientDetailTabs
+          tabs={[
+            {
+              key: "notes",
+              label: "Notes",
+              render: (
+                <>
+                  <NotesViewer
+                    initialNotes={notes}
+                    fixedPatientId={id}
+                    userId={ctx.userId}
+                    organizationId={ctx.organizationId}
+                    showAddForm
+                    addNotePlaceholder="Add a clinical note..."
+                    addNoteAction={addNote}
+                  />
+                  <div className="mt-4">
+                    <Link
+                      href={`/organization/notes?patient=${id}`}
+                      className="text-sm font-medium text-brand hover:underline"
+                    >
+                      View in full notes search &rarr;
+                    </Link>
+                  </div>
+                </>
+              ),
+            },
+            {
+              key: "checkins",
+              label: `Check-ins${checkins.length ? ` (${checkins.length})` : ""}`,
+              render: <PatientCheckinsList patientId={id} initial={checkins} />,
+            },
+          ]}
+        />
       </section>
-
-      <div className="mt-4">
-        <Link
-          href={`/organization/notes?patient=${id}`}
-          className="text-sm font-medium text-brand hover:underline"
-        >
-          View in full notes search &rarr;
-        </Link>
-      </div>
     </div>
   );
 }

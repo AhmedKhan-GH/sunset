@@ -16,8 +16,9 @@ export { resolveNoteContext };
 export async function getNotes(patientId?: string) {
   const ctx = await resolveNoteContext();
 
-  const patientFilter = patientId
-    ? sql`and n.patient_id = ${patientId}`
+  const effectivePatientId = patientId ?? ctx.patientId;
+  const patientFilter = effectivePatientId
+    ? sql`and n.patient_id = ${effectivePatientId}`
     : sql``;
 
   const results = await sql`
@@ -46,7 +47,14 @@ export async function getNotes(patientId?: string) {
 }
 
 export async function createNote(patientId: string, formData: FormData) {
-  const { userId, supabase, organizationId } = await resolveNoteContext();
+  const ctx = await resolveNoteContext();
+  const { userId, supabase, organizationId } = ctx;
+
+  if (ctx.role === "patient" || ctx.role === "relative") {
+    if (patientId !== ctx.patientId) {
+      throw new Error("Not authorized to create notes for this patient.");
+    }
+  }
 
   const content = formData.get("content");
   if (typeof content !== "string" || !content.trim()) return;

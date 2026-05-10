@@ -1,15 +1,10 @@
 import { tool } from "ai";
 import { z } from "zod";
 import { eq } from "drizzle-orm";
-import postgres from "postgres";
-import { db } from "@/lib/db";
+import { db, sql } from "@/lib/db";
 import { patients } from "@/lib/db/schema";
 import { getCallerContext } from "@/lib/ai/auth";
 import { embedText, vectorLiteral } from "@/lib/llm/embed";
-
-const sql = postgres(process.env.DATABASE_URL!);
-
-const NOTE_CREATION_ROLES = ["practitioner", "organization_admin"] as const;
 
 export const addPatientNoteTool = tool({
   description: [
@@ -25,6 +20,8 @@ export const addPatientNoteTool = tool({
     "  - The conversation is only navigation / lookups",
     "  - The user hasn't confirmed they want a note saved (offer first, then call)",
     "",
+    "For patients/relatives the patientId is automatically resolved — any value they supply is ignored.",
+    "",
     "Content style: concise clinical summary, 1-3 sentences. Include severity, timing,",
     "intervention, response. Written in natural clinical language for future semantic retrieval.",
   ].join("\n"),
@@ -32,7 +29,8 @@ export const addPatientNoteTool = tool({
     patientId: z
       .string()
       .uuid()
-      .describe("The UUID of the patient the note should be attached to."),
+      .optional()
+      .describe("The UUID of the patient the note should be attached to. Required for practitioners/admins, ignored for patients/relatives."),
     content: z
       .string()
       .min(1)
@@ -44,14 +42,15 @@ export const addPatientNoteTool = tool({
 
     const { caller } = auth;
 
-    if (!NOTE_CREATION_ROLES.includes(caller.role as (typeof NOTE_CREATION_ROLES)[number])) {
-      return { error: `Role '${caller.role}' is not permitted to create notes.` };
+    const effectivePatientId = caller.patientId ?? input.patientId;
+    if (!effectivePatientId) {
+      return { error: "patientId is required for practitioners and admins." };
     }
 
     const [patient] = await db
       .select()
       .from(patients)
-      .where(eq(patients.id, input.patientId));
+      .where(eq(patients.id, effectivePatientId));
 
     if (!patient) return { error: "Patient not found." };
     if (patient.organizationId !== caller.organizationId) {
@@ -68,7 +67,7 @@ export const addPatientNoteTool = tool({
       insert into public.patient_notes
         (organization_id, patient_id, author_id, content, embedding)
       values
-        (${caller.organizationId}, ${input.patientId}, ${caller.userId}, ${trimmed}, ${vec}::vector)
+        (${caller.organizationId}, ${effectivePatientId}, ${caller.userId}, ${trimmed}, ${vec}::vector)
       returning id
     `;
 
