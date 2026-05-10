@@ -5,6 +5,7 @@ import { migrate } from "drizzle-orm/postgres-js/migrator";
 import { profiles, organizations, practitioners, patients, relatives } from "./schema";
 import { createClient } from "@supabase/supabase-js";
 import { embedText, vectorLiteral } from "../llm/embed";
+import { patientNotesData } from "./seed-notes";
 
 dotenv.config({ path: ".env.local" });
 
@@ -325,87 +326,10 @@ async function seed() {
   }
 
   // ── Patient Notes ──────────────────────────────────────────────────────
-  console.log("\npatient notes (generating embeddings...)");
+  console.log(`\npatient notes (generating embeddings for ${patientNotesData.length} notes...)`);
 
-  const notesData = [
-    {
-      patientName: "Dorothy Williams",
-      authorEmail: "dr.amara.okafor@sunset.dev",
-      content: "Patient reports increased pain in lower back, radiating to left leg. Morphine dose adjusted from 15mg to 20mg q4h. Will reassess in 48 hours.",
-    },
-    {
-      patientName: "Dorothy Williams",
-      authorEmail: "dr.amara.okafor@sunset.dev",
-      content: "Family meeting held with daughter Carol. Discussed transition to comfort-focused care. Patient alert and oriented, participated in decision-making.",
-    },
-    {
-      patientName: "Dorothy Williams",
-      authorEmail: "nurse.priya.sharma@sunset.dev",
-      content: "Appetite declining over past 3 days. Able to tolerate small sips of water and broth. Weight stable. No signs of dehydration currently.",
-    },
-    {
-      patientName: "Robert Jackson",
-      authorEmail: "dr.amara.okafor@sunset.dev",
-      content: "Shortness of breath worsening at rest. O2 saturation 89% on room air. Started supplemental oxygen at 2L via nasal cannula. Patient more comfortable.",
-    },
-    {
-      patientName: "Robert Jackson",
-      authorEmail: "nurse.priya.sharma@sunset.dev",
-      content: "Patient anxious about breathing difficulties overnight. Provided reassurance and breathing exercises. Wife Linda present and supportive. Lorazepam 0.5mg PRN discussed with Dr. Okafor.",
-    },
-    {
-      patientName: "Margaret Chen",
-      authorEmail: "dr.james.whitfield@sunset.dev",
-      content: "Cognitive assessment shows mild confusion, worse in evenings. Sundowning pattern noted. Environment modifications recommended — nightlight, familiar objects at bedside.",
-    },
-    {
-      patientName: "Margaret Chen",
-      authorEmail: "dr.james.whitfield@sunset.dev",
-      content: "Skin integrity check: stage 1 pressure ulcer noted on sacrum. Repositioning schedule q2h initiated. Air mattress ordered. Son Henry educated on skin care.",
-    },
-    {
-      patientName: "Harold Thompson",
-      authorEmail: "nurse.priya.sharma@sunset.dev",
-      content: "Patient nauseous after morning medications. Ondansetron 4mg administered with relief within 30 minutes. Suggest taking meds with crackers going forward.",
-    },
-    {
-      patientName: "Harold Thompson",
-      authorEmail: "nurse.priya.sharma@sunset.dev",
-      content: "Excellent day — patient sat in garden for 45 minutes with wife Betty. Good spirits, pain well controlled at current regimen. Enjoying audiobooks.",
-    },
-    {
-      patientName: "Evelyn Garcia",
-      authorEmail: "dr.elena.rodriguez@sunset.dev",
-      content: "Pain management review. Current fentanyl patch 25mcg/hr providing adequate baseline. Breakthrough pain managed with oral morphine 5mg PRN, using 2-3 times daily.",
-    },
-    {
-      patientName: "Evelyn Garcia",
-      authorEmail: "dr.elena.rodriguez@sunset.dev",
-      content: "Patient expresses worry about being a burden on husband Carlos. Referral to social worker for emotional support. Discussed that these feelings are normal and valid.",
-    },
-    {
-      patientName: "James Washington",
-      authorEmail: "dr.elena.rodriguez@sunset.dev",
-      content: "Progressive dysphagia noted. Speech therapy consult requested. Currently managing with soft diet and thickened liquids. Weight loss 2kg over past month.",
-    },
-    {
-      patientName: "Helen Kim",
-      authorEmail: "nurse.ben.tanaka@sunset.dev",
-      content: "Fatigue increasing — patient sleeping 16-18 hours per day. Daughter Susan asking about what to expect. Provided family education materials on disease progression.",
-    },
-    {
-      patientName: "Helen Kim",
-      authorEmail: "nurse.ben.tanaka@sunset.dev",
-      content: "Mouth care performed. Mild thrush noted on soft palate. Nystatin oral suspension started. Daughter trained on oral swab technique for comfort.",
-    },
-    {
-      patientName: "Arthur Patel",
-      authorEmail: "dr.james.whitfield@sunset.dev",
-      content: "New onset peripheral edema bilateral lower extremities. Furosemide 20mg daily initiated. Baseline labs drawn — awaiting renal panel results.",
-    },
-  ];
-
-  for (const note of notesData) {
+  let notesInserted = 0;
+  for (const note of patientNotesData) {
     const patientId = patientRecords[note.patientName];
     const authorId = practitionerUserIds[note.authorEmail];
     const organizationId = practitionerData.find(
@@ -422,7 +346,10 @@ async function seed() {
         (${organizationId}, ${patientId}, ${authorId}, ${note.content}, ${vec}::vector)
     `;
 
-    console.log(`  ${note.patientName}: "${note.content.slice(0, 50)}..."`);
+    notesInserted++;
+    if (notesInserted % 25 === 0) {
+      console.log(`  ${notesInserted}/${patientNotesData.length} notes embedded`);
+    }
   }
 
   await client.end();
@@ -431,7 +358,7 @@ async function seed() {
     `  ${Object.keys(practitionerRecords).length + 3} staff accounts, ` +
       `${patientData.length} patients, ` +
       `${relativeData.length} relatives, ` +
-      `${notesData.length} clinical notes`,
+      `${notesInserted} clinical notes`,
   );
 }
 

@@ -1,117 +1,271 @@
-/**
- * Seed sample clinical notes (with embeddings) for every demo patient.
- * Run this AFTER `npm run db:seed` so the patients exist.
- *
- *   npx tsx --env-file=.env.local lib/db/seed-notes.ts
- *
- * Each patient gets 4-6 realistic clinical notes embedded via the local
- * mpnet model. Idempotent: skips patients that already have notes.
- */
-import postgres from "postgres";
-import { embedText, vectorLiteral } from "@/lib/llm/embed";
-import { db } from "@/lib/db";
-import { patients, practitioners } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+export const patientNotesData = [
+  // ── Dorothy Williams (Sunrise Hospice) ──────────────────────────────────
+  { patientName: "Dorothy Williams", authorEmail: "dr.amara.okafor@sunset.dev", content: "Patient reports increased pain in lower back, radiating to left leg. Morphine dose adjusted from 15mg to 20mg q4h. Will reassess in 48 hours." },
+  { patientName: "Dorothy Williams", authorEmail: "dr.amara.okafor@sunset.dev", content: "Family meeting held with daughter Carol. Discussed transition to comfort-focused care. Patient alert and oriented, participated in decision-making." },
+  { patientName: "Dorothy Williams", authorEmail: "nurse.priya.sharma@sunset.dev", content: "Appetite declining over past 3 days. Able to tolerate small sips of water and broth. Weight stable. No signs of dehydration currently." },
+  { patientName: "Dorothy Williams", authorEmail: "dr.amara.okafor@sunset.dev", content: "Pain reassessment: 20mg morphine providing better relief. Patient reports pain at 3/10 at rest, 5/10 with movement. Adequate for comfort goals." },
+  { patientName: "Dorothy Williams", authorEmail: "nurse.priya.sharma@sunset.dev", content: "Morning vitals stable. BP 118/72, HR 76, RR 16, Temp 36.8. Patient had restful night, slept approximately 6 hours with one waking." },
+  { patientName: "Dorothy Williams", authorEmail: "dr.amara.okafor@sunset.dev", content: "Patient expressing wish to attend granddaughter's recital next week. Discussed logistics with family. Will coordinate with occupational therapy for wheelchair transport plan." },
+  { patientName: "Dorothy Williams", authorEmail: "nurse.priya.sharma@sunset.dev", content: "Administered scheduled medications without difficulty. Patient tolerating oral medications well. No nausea or vomiting reported." },
+  { patientName: "Dorothy Williams", authorEmail: "dr.amara.okafor@sunset.dev", content: "Reviewed advance directive with patient and Carol. Patient reconfirmed DNR status and preference for home death. Documents updated in chart." },
+  { patientName: "Dorothy Williams", authorEmail: "nurse.priya.sharma@sunset.dev", content: "Mild constipation reported — last bowel movement 3 days ago. Senna 2 tabs added at bedtime. Encouraged fluid intake. Will reassess tomorrow." },
+  { patientName: "Dorothy Williams", authorEmail: "dr.amara.okafor@sunset.dev", content: "Spiritual care consult completed. Patient reports finding comfort in daily prayer. Chaplain visit scheduled weekly per patient request." },
+  { patientName: "Dorothy Williams", authorEmail: "nurse.priya.sharma@sunset.dev", content: "Patient ambulated to bathroom with standby assist. Slight unsteadiness noted. Grab bars in place. Fall risk precautions reviewed with family." },
+  { patientName: "Dorothy Williams", authorEmail: "dr.amara.okafor@sunset.dev", content: "Joint visit with social worker. Discussed legacy project — patient wants to record messages for grandchildren. Equipment arranged for next week." },
+  { patientName: "Dorothy Williams", authorEmail: "nurse.priya.sharma@sunset.dev", content: "Skin assessment complete. No breakdown noted. Heels slightly dry — moisturizer applied. Repositioning schedule maintained by family overnight." },
+  { patientName: "Dorothy Williams", authorEmail: "dr.amara.okafor@sunset.dev", content: "Michael Williams (son) called with concerns about mother's decreased appetite. Educated on natural dying process. Reassured that forcing food can cause distress." },
+  { patientName: "Dorothy Williams", authorEmail: "nurse.priya.sharma@sunset.dev", content: "Patient enjoyed visit from church friends today. Good spirits, laughing and sharing stories. Fatigue noted after 45 minutes — visitors departed." },
+  { patientName: "Dorothy Williams", authorEmail: "dr.amara.okafor@sunset.dev", content: "New symptom: intermittent hiccups lasting 20-30 minutes. Occurring 2-3 times daily. Started chlorpromazine 25mg PRN. Monitor for sedation." },
+  { patientName: "Dorothy Williams", authorEmail: "nurse.priya.sharma@sunset.dev", content: "Bowel regimen effective — normal BM this morning. Continue current senna dose. Patient reports feeling more comfortable." },
+  { patientName: "Dorothy Williams", authorEmail: "dr.amara.okafor@sunset.dev", content: "Weekly interdisciplinary team meeting. Dorothy stable overall. Goals: maintain comfort, support family coping, continue current medication regimen." },
+  { patientName: "Dorothy Williams", authorEmail: "nurse.priya.sharma@sunset.dev", content: "Daughter Carol asking about what to expect in coming weeks. Provided 'Gone From My Sight' booklet. Answered questions about timeline with sensitivity." },
+  { patientName: "Dorothy Williams", authorEmail: "dr.amara.okafor@sunset.dev", content: "Patient reports tingling in fingertips bilaterally. Likely peripheral neuropathy from disease progression. No intervention needed — monitoring only." },
+  { patientName: "Dorothy Williams", authorEmail: "nurse.priya.sharma@sunset.dev", content: "Oral care performed. Mouth moist, no lesions. Patient using biotene mouthwash independently. Dentures fitting well, wearing during daytime hours." },
+  { patientName: "Dorothy Williams", authorEmail: "dr.amara.okafor@sunset.dev", content: "Hiccups resolved with chlorpromazine. Used PRN twice over past week. Will keep available but not scheduling regularly given sedation risk." },
+  { patientName: "Dorothy Williams", authorEmail: "nurse.priya.sharma@sunset.dev", content: "Patient declined breakfast but accepted tea and toast at 10am. Eating pattern shifting to smaller, later meals. Weight down 0.5kg this week." },
+  { patientName: "Dorothy Williams", authorEmail: "dr.amara.okafor@sunset.dev", content: "Leg edema increasing — 2+ pitting bilateral ankles. Not causing discomfort. Elevation and compression stockings discussed but patient prefers comfort over intervention." },
+  { patientName: "Dorothy Williams", authorEmail: "nurse.priya.sharma@sunset.dev", content: "Patient attended granddaughter's recital via wheelchair transport. Returned tired but happy. States it was 'the best day in weeks.' Resting now." },
+  { patientName: "Dorothy Williams", authorEmail: "dr.amara.okafor@sunset.dev", content: "Follow-up after outing: no adverse effects. Pain remained controlled. Patient's mood notably improved. Encourages future outings when energy permits." },
+  { patientName: "Dorothy Williams", authorEmail: "nurse.priya.sharma@sunset.dev", content: "Night check: patient sleeping peacefully. Breathing even and unlabored. No distress noted. Family reports good evening — watched movie together." },
+  { patientName: "Dorothy Williams", authorEmail: "dr.amara.okafor@sunset.dev", content: "Medication review with pharmacist. Discontinued atorvastatin and lisinopril — no longer serving comfort goals. Simplified regimen to essential comfort medications only." },
 
-const sql = postgres(process.env.DATABASE_URL!);
+  // ── Robert Jackson (Sunrise Hospice) ────────────────────────────────────
+  { patientName: "Robert Jackson", authorEmail: "dr.amara.okafor@sunset.dev", content: "Shortness of breath worsening at rest. O2 saturation 89% on room air. Started supplemental oxygen at 2L via nasal cannula. Patient more comfortable." },
+  { patientName: "Robert Jackson", authorEmail: "nurse.priya.sharma@sunset.dev", content: "Patient anxious about breathing difficulties overnight. Provided reassurance and breathing exercises. Wife Linda present and supportive. Lorazepam 0.5mg PRN discussed with Dr. Okafor." },
+  { patientName: "Robert Jackson", authorEmail: "dr.amara.okafor@sunset.dev", content: "O2 increased to 3L nasal cannula. Saturation improved to 93%. Patient reports easier breathing. Discussed with family that oxygen needs may continue to increase." },
+  { patientName: "Robert Jackson", authorEmail: "nurse.priya.sharma@sunset.dev", content: "Teaching session with wife Linda on oxygen equipment. Demonstrated flow meter adjustment, tubing care, and safety precautions. Linda comfortable managing independently." },
+  { patientName: "Robert Jackson", authorEmail: "dr.amara.okafor@sunset.dev", content: "Chest auscultation: bilateral basal crackles, decreased air entry right base. Consistent with pleural effusion progression. Thoracentesis not indicated given comfort goals." },
+  { patientName: "Robert Jackson", authorEmail: "nurse.priya.sharma@sunset.dev", content: "Patient positioned in high Fowler's for meals and most of day. Reports breathing easier when upright. Hospital bed adjusted. Extra pillows provided." },
+  { patientName: "Robert Jackson", authorEmail: "dr.amara.okafor@sunset.dev", content: "Started low-dose morphine 2.5mg PO q4h for dyspnea. Explained to patient and Linda that morphine reduces sensation of breathlessness without hastening death." },
+  { patientName: "Robert Jackson", authorEmail: "nurse.priya.sharma@sunset.dev", content: "Fan positioned at bedside per patient preference — reports moving air across face helps breathing sensation. Evidence-based intervention, patient finding relief." },
+  { patientName: "Robert Jackson", authorEmail: "dr.amara.okafor@sunset.dev", content: "Son Steven visiting from out of state. Family meeting held. Discussed prognosis honestly — weeks to low months. Steven processing, asking good questions." },
+  { patientName: "Robert Jackson", authorEmail: "nurse.priya.sharma@sunset.dev", content: "Anxiety episode this morning — patient woke gasping. Lorazepam 0.5mg administered with good effect within 15 minutes. Teaching relaxation breathing when calm." },
+  { patientName: "Robert Jackson", authorEmail: "dr.amara.okafor@sunset.dev", content: "Weight loss accelerating — 3kg over past 2 weeks. Muscle wasting visible in extremities. Discussed with Linda that this is expected disease trajectory." },
+  { patientName: "Robert Jackson", authorEmail: "nurse.priya.sharma@sunset.dev", content: "Patient requesting to sit in recliner today rather than bed. Assisted with transfer — tolerated well. Watched baseball game with Steven. Good spirits." },
+  { patientName: "Robert Jackson", authorEmail: "dr.amara.okafor@sunset.dev", content: "Morphine effective for dyspnea. Patient reports breathing comfort improved significantly. No excessive sedation. Continue current dose." },
+  { patientName: "Robert Jackson", authorEmail: "nurse.priya.sharma@sunset.dev", content: "Oral intake poor today — few bites of pudding, half cup of juice. No interest in solid food. Mouth care provided. No signs of distress related to decreased intake." },
+  { patientName: "Robert Jackson", authorEmail: "dr.amara.okafor@sunset.dev", content: "Peripheral edema worsening — 3+ pitting to mid-calf. Furosemide 20mg added for comfort (reducing fluid overload symptoms). Monitor output." },
+  { patientName: "Robert Jackson", authorEmail: "nurse.priya.sharma@sunset.dev", content: "Urine output improved after furosemide — approximately 800ml in first 6 hours. Patient reports legs feeling 'lighter.' Ankle circumference reduced." },
+  { patientName: "Robert Jackson", authorEmail: "dr.amara.okafor@sunset.dev", content: "Linda reports Robert more confused in evenings. Brief periods of disorientation — asking for deceased mother. Likely metabolic changes. Supportive care, reorientation gently." },
+  { patientName: "Robert Jackson", authorEmail: "nurse.priya.sharma@sunset.dev", content: "Night shift report: patient awake 2-4am, calling out. Presence and reassurance provided. Settled back to sleep. Linda slept through — chose not to wake her." },
+  { patientName: "Robert Jackson", authorEmail: "dr.amara.okafor@sunset.dev", content: "Goals of care reaffirmed with Linda: comfort only, no hospital transfers, no IV fluids. Linda states Robert expressed these wishes clearly before cognitive changes." },
+  { patientName: "Robert Jackson", authorEmail: "nurse.priya.sharma@sunset.dev", content: "Skin dry and fragile — applying barrier cream to sacrum and heels preventatively. No breakdown yet. Alternating pressure mattress in use." },
+  { patientName: "Robert Jackson", authorEmail: "dr.amara.okafor@sunset.dev", content: "O2 requirements increasing — now at 4L to maintain comfort. Not chasing saturation numbers — focusing on patient-reported dyspnea relief." },
+  { patientName: "Robert Jackson", authorEmail: "nurse.priya.sharma@sunset.dev", content: "Steven leaving tomorrow — emotional visit at bedside. Patient lucid this afternoon, told Steven he was proud of him. Beautiful family moment." },
+  { patientName: "Robert Jackson", authorEmail: "dr.amara.okafor@sunset.dev", content: "Adding glycopyrrolate 0.2mg sublingual PRN for secretions. Rattling sounds beginning with position changes. Educating Linda that patient is not aware of or distressed by this." },
+  { patientName: "Robert Jackson", authorEmail: "nurse.priya.sharma@sunset.dev", content: "Repositioning q2h with log roll technique. Patient not verbalizing pain but facial grimacing noted during turns. Pre-medicating with morphine 15 minutes before repositioning." },
+  { patientName: "Robert Jackson", authorEmail: "dr.amara.okafor@sunset.dev", content: "Transition to actively dying phase appears imminent. Cheyne-Stokes breathing pattern emerging intermittently. Linda informed, family being contacted." },
+  { patientName: "Robert Jackson", authorEmail: "nurse.priya.sharma@sunset.dev", content: "Continuous care initiated. Patient resting, not responsive to voice but grimaces with turning. Morphine and glycopyrrolate maintaining comfort. Linda at bedside holding hand." },
+  { patientName: "Robert Jackson", authorEmail: "dr.amara.okafor@sunset.dev", content: "Comfort kit medications reviewed with night nurse. Morphine 5mg SL q2h PRN, glycopyrrolate 0.4mg SL q4h PRN, lorazepam 1mg SL q4h PRN for terminal restlessness." },
 
-// Pool of clinical-style notes. The seeder picks 4-6 per patient at random.
-const NOTE_POOL: string[] = [
-  "Patient reports pain 6/10 today in lower abdomen. Took oxycodone 5mg at 2pm with partial relief by 3pm. Encourage non-pharm comfort measures.",
-  "Pain assessment: chest pressure, 4/10, intermittent. No SOB at rest. Last dose of morphine 4 hours ago, breakthrough PRN dose available.",
-  "Episode of dyspnea after walking 10 feet to bathroom. SpO2 dropped to 89% on room air, recovered to 94% after 2L nasal cannula. Position change helped.",
-  "Increased work of breathing this evening; using accessory muscles, RR 28. Family at bedside, head of bed elevated to 45 degrees.",
-  "Vomited x2 in past hour, unable to keep water down. Ondansetron 4mg SL given with relief within 20 min. Tolerating sips of broth.",
-  "Persistent nausea since morning meds; refusing breakfast. Will hold next dose of laxative until nausea improves.",
-  "Patient anxious overnight, pacing bedroom and asking repeatedly for late husband. PRN lorazepam 0.5mg given at 2am with calming effect within 30 min.",
-  "Restlessness escalating despite 2 PRN doses today. Considering scheduled low-dose haloperidol; will discuss with attending in AM.",
-  "No bowel movement in 4 days. Abdomen distended and tender on palpation. Bisacodyl suppository given at 4pm; will reassess in morning.",
-  "Bowels not opened x 5 days despite senna + Miralax. Manual disimpaction performed with patient comfort medication on board. Result: large hard stool.",
-  "Productive cough this morning, expectorating thick yellow sputum. Lung sounds coarse bilaterally. Encouraged increased fluids.",
-  "Wet rattle audible at bedside; family asking about sounds. Glycopyrrolate 0.2mg SC given, scopolamine patch in place. Side positioning improved comfort.",
-  "Temperature 102.1 oral at evening check. Patient diaphoretic and complaining of body aches. Acetaminophen 650mg PO given.",
-  "Fever persistent at 101.4 despite acetaminophen 1 hour ago. Patient alternating chills and sweats. Will reassess in 2 hours, hydration encouraged.",
-  "Patient ate small amount of soup at lunch — first food in 24 hours. Spirits brighter today; visited with daughter for over an hour.",
-  "Decline noted: requires more assistance with transfers, sleeping more. Family aware. Discussed comfort-focused goals at length.",
-  "Pressure ulcer stage 2 on left heel. Heel boots placed bilaterally, repositioning q2h. Will monitor and apply skin barrier daily.",
-  "Patient declined medication this morning citing nausea. PRN antiemetic offered first; meds resumed by 11am.",
-  "Foley catheter discontinued today after trial of void successful. Voiding adequate amounts, no signs of retention.",
-  "Daughter expressed concern about increased confusion overnight. Reviewed sundowning patterns with her, suggested calm environment and minimal stimulation after 6pm.",
-  "Edema noted in lower extremities, +2 pitting bilaterally. Will elevate legs when in chair, monitor for worsening.",
-  "Pain regimen adjusted: increased basal morphine to address breakthrough frequency. Will monitor effectiveness over next 24 hours.",
-  "Patient verbalizing fear of dying alone. Offered presence and listening. Connected family members for video call. Tearful but settled afterward.",
-  "Overall comfortable today. Sleeping intermittently, alert when family visits. No new complaints. Medications well tolerated.",
-  "Hospice IDT meeting completed. Plan reviewed: continue current pain regimen, increase psychosocial support, dietary as tolerated. Family in agreement.",
+  // ── Margaret Chen (Sunrise Hospice) ─────────────────────────────────────
+  { patientName: "Margaret Chen", authorEmail: "dr.james.whitfield@sunset.dev", content: "Cognitive assessment shows mild confusion, worse in evenings. Sundowning pattern noted. Environment modifications recommended — nightlight, familiar objects at bedside." },
+  { patientName: "Margaret Chen", authorEmail: "dr.james.whitfield@sunset.dev", content: "Skin integrity check: stage 1 pressure ulcer noted on sacrum. Repositioning schedule q2h initiated. Air mattress ordered. Son Henry educated on skin care." },
+  { patientName: "Margaret Chen", authorEmail: "nurse.priya.sharma@sunset.dev", content: "Patient resisting medication this morning — pushing away cup. Tried crushing meds in applesauce — accepted. Will use this approach going forward." },
+  { patientName: "Margaret Chen", authorEmail: "dr.james.whitfield@sunset.dev", content: "Fall risk assessment: high risk. Bed alarm activated. Non-slip socks provided. Family instructed on supervision requirements when patient attempts to ambulate." },
+  { patientName: "Margaret Chen", authorEmail: "nurse.priya.sharma@sunset.dev", content: "Patient speaking Mandarin exclusively today — not responding to English. Henry translating. Patient appears calm and comfortable despite language regression." },
+  { patientName: "Margaret Chen", authorEmail: "dr.james.whitfield@sunset.dev", content: "Henry concerned about mother's declining cognition. Explained this is expected trajectory. Discussed maintaining routine, familiar music, and simple communication strategies." },
+  { patientName: "Margaret Chen", authorEmail: "nurse.priya.sharma@sunset.dev", content: "Pleasant morning — patient humming along to Chinese folk songs on radio. Made eye contact, smiled. These moments of connection are precious for Henry." },
+  { patientName: "Margaret Chen", authorEmail: "dr.james.whitfield@sunset.dev", content: "Pressure ulcer sacrum: no progression, remains stage 1. Repositioning protocol effective. Zinc supplement added. Nutrition adequate for wound prevention." },
+  { patientName: "Margaret Chen", authorEmail: "nurse.priya.sharma@sunset.dev", content: "Nighttime agitation episode — patient attempting to leave bed repeatedly between 8-10pm. Redirection effective. Playing familiar music helped settle her." },
+  { patientName: "Margaret Chen", authorEmail: "dr.james.whitfield@sunset.dev", content: "Started low-dose haloperidol 0.5mg at 6pm for sundowning. Monitor for efficacy over next 3 days. Goal: reduce evening agitation without over-sedation." },
+  { patientName: "Margaret Chen", authorEmail: "nurse.priya.sharma@sunset.dev", content: "Haloperidol day 3: significant improvement in evening behavior. Patient calmer after 7pm. Still some confusion but no agitation or attempts to leave bed." },
+  { patientName: "Margaret Chen", authorEmail: "dr.james.whitfield@sunset.dev", content: "Swallowing assessment: mild dysphagia identified. Recommending soft mechanical diet, thickened liquids to nectar consistency. SLP consult requested." },
+  { patientName: "Margaret Chen", authorEmail: "nurse.priya.sharma@sunset.dev", content: "Patient accepted thickened tea without difficulty. Henry brought congee from home — appropriate texture, patient ate well. Familiar foods improving intake." },
+  { patientName: "Margaret Chen", authorEmail: "dr.james.whitfield@sunset.dev", content: "Pain assessment challenging due to cognitive impairment. Using PAINAD behavioral scale. Score 2/10 at rest — occasional guarding. Current analgesia appears adequate." },
+  { patientName: "Margaret Chen", authorEmail: "nurse.priya.sharma@sunset.dev", content: "Assisted with morning hygiene. Patient cooperative with gentle guidance. Chose floral blouse — pointing to wardrobe. Maintaining some preferences and choices." },
+  { patientName: "Margaret Chen", authorEmail: "dr.james.whitfield@sunset.dev", content: "Henry requesting information about memory care versus continued home hospice. Discussed pros and cons. Currently manageable at home with our support. Revisit if safety becomes concern." },
+  { patientName: "Margaret Chen", authorEmail: "nurse.priya.sharma@sunset.dev", content: "Fluid intake adequate — approximately 1200ml today between thickened beverages and congee. No signs of dehydration. Skin turgor normal for age." },
+  { patientName: "Margaret Chen", authorEmail: "dr.james.whitfield@sunset.dev", content: "Quarterly medication review. Discontinued donepezil — no longer providing meaningful cognitive benefit at this stage. Simplifying regimen to comfort measures." },
+  { patientName: "Margaret Chen", authorEmail: "nurse.priya.sharma@sunset.dev", content: "Patient sitting in wheelchair by window today. Watching birds at feeder — appears engaged and content. Henry reports this is her 'best time of day.'" },
+  { patientName: "Margaret Chen", authorEmail: "dr.james.whitfield@sunset.dev", content: "New bruise noted on right forearm — likely bumped during transfer. Skin fragile and thin. No signs of abuse. Documented and photographed per protocol." },
+  { patientName: "Margaret Chen", authorEmail: "nurse.priya.sharma@sunset.dev", content: "Henry looking exhausted today. Encouraged respite care utilization. Reminded him of volunteer sitting service available 3x/week. Self-care for caregivers is essential." },
+  { patientName: "Margaret Chen", authorEmail: "dr.james.whitfield@sunset.dev", content: "Bowel function: no BM in 4 days. Abdomen soft, non-distended. Starting bisacodyl suppository. If ineffective, will try mineral oil enema tomorrow." },
+  { patientName: "Margaret Chen", authorEmail: "nurse.priya.sharma@sunset.dev", content: "Bisacodyl effective — large soft BM this morning. Patient appeared relieved. Resume regular senna schedule. Monitor pattern." },
+  { patientName: "Margaret Chen", authorEmail: "dr.james.whitfield@sunset.dev", content: "Interdisciplinary team meeting: Margaret stable in slow decline. Primary concerns are fall prevention, skin integrity, and caregiver burnout. Plan continues as established." },
+  { patientName: "Margaret Chen", authorEmail: "nurse.priya.sharma@sunset.dev", content: "Attempted simple conversation — patient responded with single words and gestures. Understanding seems better than verbal output. Patience and yes/no questions work best." },
+  { patientName: "Margaret Chen", authorEmail: "dr.james.whitfield@sunset.dev", content: "Pressure ulcer resolved — sacral skin intact, no redness. Continue preventive measures. Air mattress effective. Excellent family compliance with repositioning." },
+
+  // ── Harold Thompson (Sunrise Hospice) ───────────────────────────────────
+  { patientName: "Harold Thompson", authorEmail: "nurse.priya.sharma@sunset.dev", content: "Patient nauseous after morning medications. Ondansetron 4mg administered with relief within 30 minutes. Suggest taking meds with crackers going forward." },
+  { patientName: "Harold Thompson", authorEmail: "nurse.priya.sharma@sunset.dev", content: "Excellent day — patient sat in garden for 45 minutes with wife Betty. Good spirits, pain well controlled at current regimen. Enjoying audiobooks." },
+  { patientName: "Harold Thompson", authorEmail: "dr.james.whitfield@sunset.dev", content: "Routine assessment: Harold remarkably stable this month. Pain controlled, appetite fair, mood positive. Continue current plan. Next reassessment in 2 weeks." },
+  { patientName: "Harold Thompson", authorEmail: "nurse.priya.sharma@sunset.dev", content: "Betty reports Harold had nightmare last night — woke shouting. Settled quickly, does not remember content. First occurrence. Monitor for pattern." },
+  { patientName: "Harold Thompson", authorEmail: "dr.james.whitfield@sunset.dev", content: "Patient requesting reduction in oxycodone dose — feels 'foggy.' Reduced from 10mg to 7.5mg q6h. May experience slight increase in pain. Reassess in 48h." },
+  { patientName: "Harold Thompson", authorEmail: "nurse.priya.sharma@sunset.dev", content: "Day 2 of reduced oxycodone: patient reports mild increase in pain (4/10 vs previous 2/10) but prefers mental clarity. Acceptable trade-off per patient." },
+  { patientName: "Harold Thompson", authorEmail: "dr.james.whitfield@sunset.dev", content: "Harold expressed interest in painting again — used to be hobby. Occupational therapy providing adaptive equipment for weakened grip. Meaningful activity for quality of life." },
+  { patientName: "Harold Thompson", authorEmail: "nurse.priya.sharma@sunset.dev", content: "Patient painted for 20 minutes today with adapted brushes. Abstract watercolor. Betty framed it for bedroom wall. Harold beaming — 'Still got it.'" },
+  { patientName: "Harold Thompson", authorEmail: "dr.james.whitfield@sunset.dev", content: "New complaint: intermittent dizziness when standing. Orthostatic BP: lying 130/80, standing 105/65. Likely medication-related. Advise slow position changes, assist with standing." },
+  { patientName: "Harold Thompson", authorEmail: "nurse.priya.sharma@sunset.dev", content: "Implemented sit-to-stand protocol: sit at bedside 2 minutes before standing. Dizziness improved. Patient compliant with technique. Betty supervising transfers." },
+  { patientName: "Harold Thompson", authorEmail: "dr.james.whitfield@sunset.dev", content: "Harold asking philosophical questions about death today — 'What do you think happens?' Engaged in open conversation. Patient appears at peace, intellectually curious rather than fearful." },
+  { patientName: "Harold Thompson", authorEmail: "nurse.priya.sharma@sunset.dev", content: "Audiobook delivery set up on tablet. Patient listening to history series — 'The Great War' currently. Reports it helps pass time and keeps mind active." },
+  { patientName: "Harold Thompson", authorEmail: "dr.james.whitfield@sunset.dev", content: "Quarterly labs (patient-requested for own curiosity): hemoglobin 9.2, albumin 2.8. Trending down slowly. Patient informed, takes information matter-of-factly." },
+  { patientName: "Harold Thompson", authorEmail: "nurse.priya.sharma@sunset.dev", content: "Betty celebrating birthday today — Harold had nurse help order flowers delivered. Sweet gesture. Small celebration with cake. Harold ate a full slice." },
+  { patientName: "Harold Thompson", authorEmail: "dr.james.whitfield@sunset.dev", content: "Nausea recurring more frequently — 3-4 times per week now. Adding scheduled ondansetron 4mg BID rather than PRN. Also starting metoclopramide 10mg before meals." },
+  { patientName: "Harold Thompson", authorEmail: "nurse.priya.sharma@sunset.dev", content: "Scheduled antiemetic regimen working well. No nausea episodes past 4 days. Appetite improved slightly — eating 50-60% of meals now vs 30% before." },
+  { patientName: "Harold Thompson", authorEmail: "dr.james.whitfield@sunset.dev", content: "Harold completed advance directive video recording today. Clear and articulate about wishes. Copy to chart, copy to Betty, copy to attorney. Peace of mind for all." },
+  { patientName: "Harold Thompson", authorEmail: "nurse.priya.sharma@sunset.dev", content: "Patient and Betty walking to mailbox together daily — approximately 50 meters round trip. Good functional exercise. Harold uses rolling walker. No shortness of breath." },
+  { patientName: "Harold Thompson", authorEmail: "dr.james.whitfield@sunset.dev", content: "Slight tremor noted in right hand — new finding. Fine motor skills affected. Painting more difficult. OT adjusting adaptive equipment. Could be disease progression or medication effect." },
+  { patientName: "Harold Thompson", authorEmail: "nurse.priya.sharma@sunset.dev", content: "Patient frustrated with tremor today — dropped teacup. Provided unbreakable mugs with large handles. Validated his frustration while offering practical solutions." },
+  { patientName: "Harold Thompson", authorEmail: "dr.james.whitfield@sunset.dev", content: "Reducing oxycodone further per patient request — trying 5mg q6h. Harold prioritizes function over complete pain relief. Respecting his autonomy in this decision." },
+  { patientName: "Harold Thompson", authorEmail: "nurse.priya.sharma@sunset.dev", content: "Garden sitting routine continues daily weather permitting. Harold identifies birds by sound. Betty brings tea at 3pm. Beautiful ritual they've maintained." },
+  { patientName: "Harold Thompson", authorEmail: "dr.james.whitfield@sunset.dev", content: "Weight stable this month — unusual for his diagnosis stage. Good oral intake, meaningful activity, strong emotional support from Betty likely contributing. Encouraging trajectory." },
+  { patientName: "Harold Thompson", authorEmail: "nurse.priya.sharma@sunset.dev", content: "Harold asking about volunteer visiting program — wants someone to discuss books with. Coordinating with volunteer services. Intellectual stimulation important to his quality of life." },
+  { patientName: "Harold Thompson", authorEmail: "dr.james.whitfield@sunset.dev", content: "Night sweats reported past 3 nights. Sheets soaked by morning. Started dexamethasone 2mg daily trial. Also providing extra cotton sheets for easy changes." },
+
+  // ── Arthur Patel (Sunrise Hospice) ──────────────────────────────────────
+  { patientName: "Arthur Patel", authorEmail: "dr.james.whitfield@sunset.dev", content: "New onset peripheral edema bilateral lower extremities. Furosemide 20mg daily initiated. Baseline labs drawn — awaiting renal panel results." },
+  { patientName: "Arthur Patel", authorEmail: "nurse.priya.sharma@sunset.dev", content: "Labs back: creatinine 2.1 (baseline 1.4), BUN 38. Renal function declining. Dr. Whitfield notified. Adjusting medication doses accordingly." },
+  { patientName: "Arthur Patel", authorEmail: "dr.james.whitfield@sunset.dev", content: "Renal decline consistent with disease progression. No dialysis per patient's expressed wishes. Adjusting renally-cleared medications. Monitoring potassium." },
+  { patientName: "Arthur Patel", authorEmail: "nurse.priya.sharma@sunset.dev", content: "Patient's wife Anita struggling with caregiving. No portal access set up yet. Assisted with practical tasks today. Social work referral for caregiver support." },
+  { patientName: "Arthur Patel", authorEmail: "dr.james.whitfield@sunset.dev", content: "Arthur reports increasing fatigue — sleeping 12-14 hours. Daytime drowsiness affecting quality time with Anita. Likely multifactorial: renal failure, anemia, disease." },
+  { patientName: "Arthur Patel", authorEmail: "nurse.priya.sharma@sunset.dev", content: "Potassium 5.8 — elevated. Dietary potassium restriction discussed with Anita. Kayexalate 15g daily added. Repeat level in 3 days." },
+  { patientName: "Arthur Patel", authorEmail: "dr.james.whitfield@sunset.dev", content: "Family meeting with Anita and nephew (phone). Discussed likely weeks-to-months prognosis. Anita tearful but understanding. Nephew offering to visit and help." },
+  { patientName: "Arthur Patel", authorEmail: "nurse.priya.sharma@sunset.dev", content: "Potassium recheck: 5.2. Improved with kayexalate and dietary changes. Continue current approach. Anita prepared low-potassium dal — patient enjoyed it." },
+  { patientName: "Arthur Patel", authorEmail: "dr.james.whitfield@sunset.dev", content: "Pruritus developing — likely uremic. Skin dry and flaking. Started hydroxyzine 25mg at bedtime. Emollient cream applied BID. Monitor for scratch wounds." },
+  { patientName: "Arthur Patel", authorEmail: "nurse.priya.sharma@sunset.dev", content: "Arthur scratched arms significantly overnight despite hydroxyzine. Soft cotton mittens provided for sleep. Nails trimmed short. Cream applied liberally." },
+  { patientName: "Arthur Patel", authorEmail: "dr.james.whitfield@sunset.dev", content: "Adding gabapentin 100mg TID for uremic pruritus — often more effective than antihistamines for this etiology. Start low given renal impairment." },
+  { patientName: "Arthur Patel", authorEmail: "nurse.priya.sharma@sunset.dev", content: "Gabapentin day 5: itching reduced significantly. Patient sleeping better — 'First good night in two weeks.' Continue current dose. Arms healing." },
+  { patientName: "Arthur Patel", authorEmail: "dr.james.whitfield@sunset.dev", content: "Edema improved with furosemide but not resolved. Acceptable. Patient comfortable. Not chasing labs — treating symptoms and comfort." },
+  { patientName: "Arthur Patel", authorEmail: "nurse.priya.sharma@sunset.dev", content: "Arthur requesting traditional Hindu prayer items at bedside. Coordinated with family — small prayer space set up on side table. Incense avoided due to respiratory sensitivity." },
+  { patientName: "Arthur Patel", authorEmail: "dr.james.whitfield@sunset.dev", content: "Appetite declining — eating 25% of meals. Metallic taste reported (common in renal failure). Suggesting cold foods, citrus flavoring to mask taste. No pressure to eat." },
+  { patientName: "Arthur Patel", authorEmail: "nurse.priya.sharma@sunset.dev", content: "Nephew arrived for visit. Arthur visibly brightened. Engaged in conversation for 30 minutes — longest interaction this week. Family presence clearly beneficial." },
+  { patientName: "Arthur Patel", authorEmail: "dr.james.whitfield@sunset.dev", content: "Myoclonic jerks noted in upper extremities — likely uremic encephalopathy beginning. Low-dose clonazepam 0.25mg BID started. Warning family about possible increased drowsiness." },
+  { patientName: "Arthur Patel", authorEmail: "nurse.priya.sharma@sunset.dev", content: "Myoclonus reduced with clonazepam. Patient more drowsy — sleeping 16 hours now. Anita understanding that this is progression. Holding his hand while he sleeps." },
+  { patientName: "Arthur Patel", authorEmail: "dr.james.whitfield@sunset.dev", content: "Urine output decreasing — approximately 400ml/day now. Edema progressing upward. Comfort focus only. Anita informed this indicates kidneys failing further." },
+  { patientName: "Arthur Patel", authorEmail: "nurse.priya.sharma@sunset.dev", content: "Mouth care important now — patient mouth-breathing more. Glycerin swabs q2h. Lip balm applied. Anita taught technique and helping between nursing visits." },
+  { patientName: "Arthur Patel", authorEmail: "dr.james.whitfield@sunset.dev", content: "Breathing pattern changing — periods of apnea 10-15 seconds followed by deep breaths. Cheyne-Stokes developing. Anita at bedside. Nephew arriving tomorrow." },
+  { patientName: "Arthur Patel", authorEmail: "nurse.priya.sharma@sunset.dev", content: "Continuous care authorized. Patient unresponsive but appears comfortable. No grimacing, no restlessness. Hindu priest visited per family request. Peaceful environment maintained." },
+
+  // ── Evelyn Garcia (Harbor Palliative) ───────────────────────────────────
+  { patientName: "Evelyn Garcia", authorEmail: "dr.elena.rodriguez@sunset.dev", content: "Pain management review. Current fentanyl patch 25mcg/hr providing adequate baseline. Breakthrough pain managed with oral morphine 5mg PRN, using 2-3 times daily." },
+  { patientName: "Evelyn Garcia", authorEmail: "dr.elena.rodriguez@sunset.dev", content: "Patient expresses worry about being a burden on husband Carlos. Referral to social worker for emotional support. Discussed that these feelings are normal and valid." },
+  { patientName: "Evelyn Garcia", authorEmail: "nurse.ben.tanaka@sunset.dev", content: "Fentanyl patch change day. Old patch removed, site clean and intact. New patch applied to upper back, left side. Rotation sites documented." },
+  { patientName: "Evelyn Garcia", authorEmail: "dr.elena.rodriguez@sunset.dev", content: "Social worker report: Evelyn opened up about fears of leaving Carlos alone. They have no children nearby. Exploring community support connections for Carlos." },
+  { patientName: "Evelyn Garcia", authorEmail: "nurse.ben.tanaka@sunset.dev", content: "Patient reports burning sensation at previous patch site. Examined — mild erythema, no blistering. Applying hydrocortisone cream. Will avoid this site for 2 rotations." },
+  { patientName: "Evelyn Garcia", authorEmail: "dr.elena.rodriguez@sunset.dev", content: "Breakthrough morphine usage increasing to 4-5 times daily. Fentanyl patch dose increase to 37mcg/hr indicated. Change at next rotation date." },
+  { patientName: "Evelyn Garcia", authorEmail: "nurse.ben.tanaka@sunset.dev", content: "New fentanyl 37mcg/hr patch applied. Patient tolerated well. Will monitor for over-sedation during titration period. Carlos aware of signs to watch for." },
+  { patientName: "Evelyn Garcia", authorEmail: "dr.elena.rodriguez@sunset.dev", content: "Day 3 of increased patch: breakthrough usage down to 1-2 times daily. Pain at 3/10 most of day. Patient satisfied. No excessive drowsiness." },
+  { patientName: "Evelyn Garcia", authorEmail: "nurse.ben.tanaka@sunset.dev", content: "Carlos asking about medical marijuana for Evelyn's pain and anxiety. Provided information on state program. Dr. Rodriguez to discuss at next visit." },
+  { patientName: "Evelyn Garcia", authorEmail: "dr.elena.rodriguez@sunset.dev", content: "Discussed cannabis options with patient and Carlos. Patient willing to try CBD oil for anxiety. Starting low dose 10mg BID. Continue all current medications." },
+  { patientName: "Evelyn Garcia", authorEmail: "nurse.ben.tanaka@sunset.dev", content: "Evelyn reporting improved sleep with CBD oil — 'less racing thoughts at bedtime.' Carlos confirms she's settling to sleep faster. No adverse effects noted." },
+  { patientName: "Evelyn Garcia", authorEmail: "dr.elena.rodriguez@sunset.dev", content: "Daughter Patricia visiting from Houston. Patient's mood visibly lifted. Energy somewhat better with emotional boost. Encouraging Patricia to visit more frequently if possible." },
+  { patientName: "Evelyn Garcia", authorEmail: "nurse.ben.tanaka@sunset.dev", content: "Patricia taught wound care for sacral pressure area during her visit. Competent with dressing changes. Gives Carlos a break from this task when she's here." },
+  { patientName: "Evelyn Garcia", authorEmail: "dr.elena.rodriguez@sunset.dev", content: "Sacral wound assessment: stage 2, 3cm x 2cm. Clean granulation tissue. No signs of infection. Continue current dressing protocol. Nutrition adequate for healing." },
+  { patientName: "Evelyn Garcia", authorEmail: "nurse.ben.tanaka@sunset.dev", content: "Patient very emotional today — anniversary of her mother's death. Crying intermittently. Provided presence and tissues. Carlos holding her hand. Grief is natural." },
+  { patientName: "Evelyn Garcia", authorEmail: "dr.elena.rodriguez@sunset.dev", content: "Bone pain increasing in ribs — new metastatic lesion suspected based on symptoms. Not pursuing imaging per comfort goals. Adjusting analgesia to address new pain pattern." },
+  { patientName: "Evelyn Garcia", authorEmail: "nurse.ben.tanaka@sunset.dev", content: "Positioning getting more challenging with rib pain. Using pillow splinting technique. Patient prefers left side-lying. Adjusting care routine to minimize position changes." },
+  { patientName: "Evelyn Garcia", authorEmail: "dr.elena.rodriguez@sunset.dev", content: "Adding dexamethasone 4mg daily for bone pain and general anti-inflammatory effect. May also help appetite and energy. Monitor for insomnia and mood changes." },
+  { patientName: "Evelyn Garcia", authorEmail: "nurse.ben.tanaka@sunset.dev", content: "Dexamethasone day 4: notable improvement in energy and appetite. Evelyn ate full lunch — first time in weeks. Carlos overjoyed. Cautioned this may be temporary." },
+  { patientName: "Evelyn Garcia", authorEmail: "dr.elena.rodriguez@sunset.dev", content: "Evelyn wants to cook Carlos's birthday dinner next week — traditional tamales. Discussed energy conservation strategies to make this possible. OT to help with kitchen setup." },
+  { patientName: "Evelyn Garcia", authorEmail: "nurse.ben.tanaka@sunset.dev", content: "Evelyn successfully made tamales with OT adaptations — perching stool, prepared ingredients in stages over 2 days. Carlos tearful at dinner. 'Best birthday gift ever.'" },
+  { patientName: "Evelyn Garcia", authorEmail: "dr.elena.rodriguez@sunset.dev", content: "Post-cooking activity: expected fatigue but no pain flare. Rest day today. Patient content with accomplishment. These meaningful moments define quality palliative care." },
+  { patientName: "Evelyn Garcia", authorEmail: "nurse.ben.tanaka@sunset.dev", content: "Sacral wound healing — now 2cm x 1.5cm. Good progress. Reduced dressing changes to every other day. Patricia manages weekends, gives Carlos free time." },
+  { patientName: "Evelyn Garcia", authorEmail: "dr.elena.rodriguez@sunset.dev", content: "Insomnia developing — likely dexamethasone side effect. Moving dose to morning only. If persists, will add melatonin 3mg at bedtime rather than reducing steroid while beneficial." },
+  { patientName: "Evelyn Garcia", authorEmail: "nurse.ben.tanaka@sunset.dev", content: "Morning dexamethasone dosing resolved insomnia. Patient sleeping 7-8 hours again. Energy still good during day. Current medication balance working well." },
+  { patientName: "Evelyn Garcia", authorEmail: "dr.elena.rodriguez@sunset.dev", content: "Carlos reports Evelyn talking about 'getting her affairs in order' — updating will, writing letters to family. Not distressed — purposeful and organized. Healthy coping." },
+  { patientName: "Evelyn Garcia", authorEmail: "nurse.ben.tanaka@sunset.dev", content: "Helped Evelyn write letter labels today at her request — hands too shaky for addresses. She dictated personal messages. Beautiful legacy work. 12 letters total for various family members." },
+  { patientName: "Evelyn Garcia", authorEmail: "dr.elena.rodriguez@sunset.dev", content: "Fentanyl patch steady at 37mcg/hr. Breakthrough usage minimal — once daily average. CBD continuing for anxiety. Overall excellent symptom management at present." },
+
+  // ── James Washington (Harbor Palliative) ────────────────────────────────
+  { patientName: "James Washington", authorEmail: "dr.elena.rodriguez@sunset.dev", content: "Progressive dysphagia noted. Speech therapy consult requested. Currently managing with soft diet and thickened liquids. Weight loss 2kg over past month." },
+  { patientName: "James Washington", authorEmail: "nurse.ben.tanaka@sunset.dev", content: "SLP assessment complete: recommends puree diet with honey-thick liquids. Chin tuck maneuver during swallowing. Patient practicing technique with good compliance." },
+  { patientName: "James Washington", authorEmail: "dr.elena.rodriguez@sunset.dev", content: "Weight loss continuing despite dietary modifications. BMI 19.2. Discussed PEG tube with patient — declined. Respects quality over quantity. Wife Ruth supportive of decision." },
+  { patientName: "James Washington", authorEmail: "nurse.ben.tanaka@sunset.dev", content: "Ruth preparing pureed meals that look appetizing — using molds and garnishes. Patient eating better with visually appealing food. Creative caregiving approach." },
+  { patientName: "James Washington", authorEmail: "dr.elena.rodriguez@sunset.dev", content: "Voice increasingly hoarse — likely recurrent laryngeal nerve involvement. Speech becoming effortful. Providing whiteboard and pen for communication backup." },
+  { patientName: "James Washington", authorEmail: "nurse.ben.tanaka@sunset.dev", content: "Patient used whiteboard for first time today to communicate medication timing preference. Frustration with voice loss evident but adapting. Patience essential in interactions." },
+  { patientName: "James Washington", authorEmail: "dr.elena.rodriguez@sunset.dev", content: "Aspiration risk increasing. Two coughing episodes during meals this week. Emphasizing chin tuck, small bites, and alternating solids with liquids. Ruth supervising all meals." },
+  { patientName: "James Washington", authorEmail: "nurse.ben.tanaka@sunset.dev", content: "James writing messages on whiteboard to Ruth — 'Thank you for everything you do.' Emotional moment during visit. Their bond is deeply supportive of his comfort." },
+  { patientName: "James Washington", authorEmail: "dr.elena.rodriguez@sunset.dev", content: "Low-grade fever 37.8 — possible aspiration pneumonia. Auscultation: faint crackles right lower lobe. Starting oral antibiotics for comfort (reduce fever/malaise). Not pursuing hospitalization." },
+  { patientName: "James Washington", authorEmail: "nurse.ben.tanaka@sunset.dev", content: "Fever down to 37.2 with antibiotics day 2. Patient more comfortable. Appetite poor during illness but taking adequate fluids. Ruth monitoring temperature q6h." },
+  { patientName: "James Washington", authorEmail: "dr.elena.rodriguez@sunset.dev", content: "Pneumonia resolving. Fever normalized day 4. However, swallowing further deteriorated during illness. Now tolerating only puree without any thin liquid component." },
+  { patientName: "James Washington", authorEmail: "nurse.ben.tanaka@sunset.dev", content: "Oral care critical now — patient cannot rinse effectively. Using swab sticks with mouthwash q4h. Lips dry, applying lanolin. Ruth excellent with this routine." },
+  { patientName: "James Washington", authorEmail: "dr.elena.rodriguez@sunset.dev", content: "Discussion with James (via whiteboard) and Ruth about trajectory. He writes: 'When I can't swallow at all, let me go peacefully.' Documented in chart. Clear wishes." },
+  { patientName: "James Washington", authorEmail: "nurse.ben.tanaka@sunset.dev", content: "Patient managing small amounts of thickened Ensure — approximately 500 calories daily. Weight now 58kg (was 65kg at admission). Muscle wasting prominent in extremities." },
+  { patientName: "James Washington", authorEmail: "dr.elena.rodriguez@sunset.dev", content: "Pain assessment: mild epigastric discomfort after meals. Likely related to effort of swallowing. Small frequent meals rather than three larger ones. Antacid added." },
+  { patientName: "James Washington", authorEmail: "nurse.ben.tanaka@sunset.dev", content: "James watching old family videos today — pointing at screen, mouthing names. Ruth sitting with him. Meaningful life review activity. Non-verbal communication still rich." },
+  { patientName: "James Washington", authorEmail: "dr.elena.rodriguez@sunset.dev", content: "Ruth asking about hospice versus continued palliative care. At current trajectory, hospice admission appropriate. James nodded agreement when discussed. Referral initiated." },
+  { patientName: "James Washington", authorEmail: "nurse.ben.tanaka@sunset.dev", content: "Suction equipment provided for home — secretions pooling in throat. Ruth trained on oral suctioning technique. Using PRN, especially after meals and at bedtime." },
+  { patientName: "James Washington", authorEmail: "dr.elena.rodriguez@sunset.dev", content: "Hyoscine patch applied for secretion management — 1.5mg/72h. Should reduce pooling. Continue suction PRN. Goal: minimize choking sensation and distress." },
+  { patientName: "James Washington", authorEmail: "nurse.ben.tanaka@sunset.dev", content: "Hyoscine effective — secretions noticeably reduced. Ruth reports less suctioning needed. James appears more comfortable, less throat-clearing attempts." },
+  { patientName: "James Washington", authorEmail: "dr.elena.rodriguez@sunset.dev", content: "Swallowing now limited to teaspoon amounts of puree. Caloric intake insufficient to sustain. Discussed with Ruth — we are transitioning to comfort-only oral care, no intake goals." },
+  { patientName: "James Washington", authorEmail: "nurse.ben.tanaka@sunset.dev", content: "Mouth care now primary oral intervention. Flavored swabs (lemon-glycerin) for taste sensation. James accepting these — slight smile with lemon flavor. Small pleasures matter." },
+  { patientName: "James Washington", authorEmail: "dr.elena.rodriguez@sunset.dev", content: "James increasingly drowsy — sleeping 18+ hours. Wakes for brief periods, recognizes Ruth. Writes 'love' on whiteboard. Transitioning to actively dying phase." },
+
+  // ── Helen Kim (Harbor Palliative) ───────────────────────────────────────
+  { patientName: "Helen Kim", authorEmail: "nurse.ben.tanaka@sunset.dev", content: "Fatigue increasing — patient sleeping 16-18 hours per day. Daughter Susan asking about what to expect. Provided family education materials on disease progression." },
+  { patientName: "Helen Kim", authorEmail: "nurse.ben.tanaka@sunset.dev", content: "Mouth care performed. Mild thrush noted on soft palate. Nystatin oral suspension started. Daughter trained on oral swab technique for comfort." },
+  { patientName: "Helen Kim", authorEmail: "dr.elena.rodriguez@sunset.dev", content: "Helen more alert today — periods of wakefulness lasting 2-3 hours. Fluctuation is normal at this stage. Susan encouraged to use alert periods for connection." },
+  { patientName: "Helen Kim", authorEmail: "nurse.ben.tanaka@sunset.dev", content: "Thrush improving day 5 of nystatin. White patches less prominent. Patient accepting oral swabs without resistance. Continue treatment full 7-day course." },
+  { patientName: "Helen Kim", authorEmail: "dr.elena.rodriguez@sunset.dev", content: "Susan and Thomas both present today. Family discussion about funeral preferences — Helen was able to participate briefly. Prefers cremation, Korean Buddhist ceremony." },
+  { patientName: "Helen Kim", authorEmail: "nurse.ben.tanaka@sunset.dev", content: "Patient spoke in Korean today — asked for 'mul' (water). Small sips provided with thickener. First verbal request in days. Susan encouraged." },
+  { patientName: "Helen Kim", authorEmail: "dr.elena.rodriguez@sunset.dev", content: "Pain assessment using non-verbal cues: guarding right abdomen on palpation. Likely hepatic capsule distension. Starting low-dose dexamethasone 2mg for hepatic pain." },
+  { patientName: "Helen Kim", authorEmail: "nurse.ben.tanaka@sunset.dev", content: "Dexamethasone appears helpful — less guarding noted with repositioning. Patient's face more relaxed. Susan reports mother seems more comfortable." },
+  { patientName: "Helen Kim", authorEmail: "dr.elena.rodriguez@sunset.dev", content: "Jaundice progressing — sclera and skin notably yellow. Pruritus mild. Cool cloths and moisturizer managing itch. Not distressing to patient at present." },
+  { patientName: "Helen Kim", authorEmail: "nurse.ben.tanaka@sunset.dev", content: "Susan asking about jaundice — worried it means pain. Explained it's liver function declining, not directly painful. Yellowing will continue. Focus on comfort measures." },
+  { patientName: "Helen Kim", authorEmail: "dr.elena.rodriguez@sunset.dev", content: "Abdomen distended — likely ascites developing. Not tense or uncomfortable. Will monitor. Paracentesis only if causing breathing difficulty or significant discomfort." },
+  { patientName: "Helen Kim", authorEmail: "nurse.ben.tanaka@sunset.dev", content: "Helen held Susan's hand today and squeezed — clear intentional gesture. Susan crying happy tears. 'She knows I'm here.' Confirmed — she does." },
+  { patientName: "Helen Kim", authorEmail: "dr.elena.rodriguez@sunset.dev", content: "Urine dark and concentrated — small volumes. Normal for end-stage hepatic failure. Catheter not indicated unless urinary retention causes discomfort. Pad care adequate." },
+  { patientName: "Helen Kim", authorEmail: "nurse.ben.tanaka@sunset.dev", content: "Incontinence care: barrier cream applied, absorbent pads changed q4h minimum. Skin intact perineumally. Gentle log-roll technique for pad changes to minimize disturbance." },
+  { patientName: "Helen Kim", authorEmail: "dr.elena.rodriguez@sunset.dev", content: "Susan requesting Buddhist monk visit. Coordinated with local temple — Reverend Park will visit Thursday for chanting ceremony. Important cultural end-of-life ritual." },
+  { patientName: "Helen Kim", authorEmail: "nurse.ben.tanaka@sunset.dev", content: "Monk visited today — 30 minutes of chanting at bedside. Helen appeared at peace during ceremony. Susan and Thomas present. Room felt sacred and calm." },
+  { patientName: "Helen Kim", authorEmail: "dr.elena.rodriguez@sunset.dev", content: "Helen transitioning — Cheyne-Stokes breathing, peripheral mottling hands and feet. Cool extremities. Not responsive to stimulation. Family notified, gathering at bedside." },
+  { patientName: "Helen Kim", authorEmail: "nurse.ben.tanaka@sunset.dev", content: "Continuous care presence. Family keeping vigil — Susan, Thomas, two grandchildren in adjacent room. Playing soft Korean instrumental music per Susan's choice. Peaceful environment." },
+  { patientName: "Helen Kim", authorEmail: "dr.elena.rodriguez@sunset.dev", content: "Comfort medications available: morphine 2.5mg SL q2h PRN for any signs of distress, glycopyrrolate 0.2mg SL q4h PRN for secretions. Currently no signs of distress." },
+  { patientName: "Helen Kim", authorEmail: "nurse.ben.tanaka@sunset.dev", content: "Respirations slowing — 8/minute, shallow. Long pauses between breaths. Family aware this is the end phase. Providing quiet support and presence. Susan reading Buddhist prayers." },
+
+  // ── Gloria Nguyen (Harbor Palliative) ───────────────────────────────────
+  { patientName: "Gloria Nguyen", authorEmail: "nurse.ben.tanaka@sunset.dev", content: "Initial assessment: patient alert but fatigued. Pain 5/10 in lower abdomen. Current analgesic regimen appears inadequate. Dr. Rodriguez to review medications." },
+  { patientName: "Gloria Nguyen", authorEmail: "dr.elena.rodriguez@sunset.dev", content: "Pain assessment: visceral abdominal pain, constant, worsening over past week. Starting oxycodone 5mg q4h scheduled plus 2.5mg q2h PRN. Goal: reduce pain to manageable level." },
+  { patientName: "Gloria Nguyen", authorEmail: "nurse.ben.tanaka@sunset.dev", content: "Day 2 of new pain regimen: patient reports pain at 3/10. Significant improvement. Used PRN once today for positional pain with turning. No sedation concerns." },
+  { patientName: "Gloria Nguyen", authorEmail: "dr.elena.rodriguez@sunset.dev", content: "No family visitors yet since admission. Patient states children live overseas (Vietnam). Exploring video call capabilities. Social isolation a concern for emotional wellbeing." },
+  { patientName: "Gloria Nguyen", authorEmail: "nurse.ben.tanaka@sunset.dev", content: "Set up tablet for video calling. Gloria spoke with daughter in Ho Chi Minh City for 20 minutes. Animated and smiling during call. Huge mood boost. Scheduling weekly calls." },
+  { patientName: "Gloria Nguyen", authorEmail: "dr.elena.rodriguez@sunset.dev", content: "Gloria requesting Vietnamese food — hospital/facility meals unfamiliar. Coordinating with kitchen for rice porridge (chao) as base. Family sending care package with familiar condiments." },
+  { patientName: "Gloria Nguyen", authorEmail: "nurse.ben.tanaka@sunset.dev", content: "Care package arrived from family — fish sauce, pickled vegetables, dried shrimp. Gloria's appetite improved markedly with familiar flavors. Cultural food preferences matter enormously." },
+  { patientName: "Gloria Nguyen", authorEmail: "dr.elena.rodriguez@sunset.dev", content: "Abdominal distension increasing. Gentle palpation reveals probable ascites. Not causing respiratory compromise. Monitor progression. Paracentesis if symptomatic." },
+  { patientName: "Gloria Nguyen", authorEmail: "nurse.ben.tanaka@sunset.dev", content: "Gloria teaching me Vietnamese words during care — 'cam on' (thank you), 'dau' (pain). Building rapport through language exchange. She laughs at my pronunciation." },
+  { patientName: "Gloria Nguyen", authorEmail: "dr.elena.rodriguez@sunset.dev", content: "Ascites progressing — now causing mild dyspnea when supine. Scheduling therapeutic paracentesis for symptom relief. Explained procedure to Gloria with interpreter assistance." },
+  { patientName: "Gloria Nguyen", authorEmail: "nurse.ben.tanaka@sunset.dev", content: "Post-paracentesis: 2.5L drained. Gloria reports immediate breathing relief. 'Like taking off a heavy blanket.' Resting comfortably. Monitoring for hypotension." },
+  { patientName: "Gloria Nguyen", authorEmail: "dr.elena.rodriguez@sunset.dev", content: "Post-procedure vitals stable. Marked improvement in comfort. Expect re-accumulation in 2-3 weeks. Will repeat as needed for symptom relief." },
+  { patientName: "Gloria Nguyen", authorEmail: "nurse.ben.tanaka@sunset.dev", content: "Gloria walking to common area today — first time since admission. Sat by window watching garden. Told me about her garden in Vietnam. Nostalgia but not sadness." },
+  { patientName: "Gloria Nguyen", authorEmail: "dr.elena.rodriguez@sunset.dev", content: "Weekly video call with family — three children and six grandchildren all on screen. Gloria animated, blowing kisses. Energy dipped afterward but mood excellent." },
+  { patientName: "Gloria Nguyen", authorEmail: "nurse.ben.tanaka@sunset.dev", content: "Noticed Gloria not eating breakfast past 3 days — only drinking tea. Reports nausea in mornings. Starting metoclopramide 10mg pre-breakfast. Also offering smaller portions." },
+  { patientName: "Gloria Nguyen", authorEmail: "dr.elena.rodriguez@sunset.dev", content: "Morning nausea likely from oxycodone peak + empty stomach combination. Moved first oxycodone dose to after small snack. Metoclopramide helping. Intake improved." },
+  { patientName: "Gloria Nguyen", authorEmail: "nurse.ben.tanaka@sunset.dev", content: "Vietnamese community volunteer visitor today — Anh, elderly woman from local temple. They spoke for an hour in Vietnamese. Gloria visibly less lonely. Scheduling weekly visits." },
+  { patientName: "Gloria Nguyen", authorEmail: "dr.elena.rodriguez@sunset.dev", content: "Daughter requesting to fly in from Vietnam. Provided letter for visa emergency application. Gloria asking 'how long do I have?' — honest conversation about weeks to months." },
+  { patientName: "Gloria Nguyen", authorEmail: "nurse.ben.tanaka@sunset.dev", content: "Gloria making origami cranes — says she wants to fold 1000 for good luck before she dies. Vietnamese/Japanese tradition. Hands trembling but determined. Beautiful goal." },
+  { patientName: "Gloria Nguyen", authorEmail: "dr.elena.rodriguez@sunset.dev", content: "Ascites re-accumulating as expected. Waistband tight, mild dyspnea on exertion. Scheduling repeat paracentesis for next week unless symptoms worsen sooner." },
+  { patientName: "Gloria Nguyen", authorEmail: "nurse.ben.tanaka@sunset.dev", content: "Counted cranes today at Gloria's request — 247 so far. Staff and volunteers contributing. Gloria directing colors and patterns. Project giving her purpose and daily structure." },
+  { patientName: "Gloria Nguyen", authorEmail: "dr.elena.rodriguez@sunset.dev", content: "Daughter's visa approved — arriving in 5 days. Gloria's spirits high, asking to look presentable. Arranged hair wash and styling. Motivated by reunion." },
+  { patientName: "Gloria Nguyen", authorEmail: "nurse.ben.tanaka@sunset.dev", content: "Second paracentesis: 3L removed this time. More rapid re-accumulation than first time. Gloria tolerating procedure well. Breathing easier immediately again." },
+  { patientName: "Gloria Nguyen", authorEmail: "dr.elena.rodriguez@sunset.dev", content: "Disease progressing — ascites intervals shortening, fatigue deepening, weight loss despite appetite efforts. Prognosis likely weeks. Daughter's arrival well-timed." },
+  { patientName: "Gloria Nguyen", authorEmail: "nurse.ben.tanaka@sunset.dev", content: "Daughter Linh arrived today. Gloria cried with joy — first in-person contact in 2 years. Linh helping with care, feeding mother rice porridge. Room atmosphere transformed." },
+  { patientName: "Gloria Nguyen", authorEmail: "dr.elena.rodriguez@sunset.dev", content: "Family meeting with Linh (daughter) and interpreter. Discussed current status and trajectory. Linh understanding and grateful for care. Planning to stay 3 weeks." },
+  { patientName: "Gloria Nguyen", authorEmail: "nurse.ben.tanaka@sunset.dev", content: "Gloria and Linh folding cranes together — up to 412 now. Gloria mostly directing, Linh's hands doing the folding. Shared activity bringing them joy during difficult time." },
+
+  // ── Additional notes for balance ────────────────────────────────────────
+  { patientName: "Robert Jackson", authorEmail: "dr.amara.okafor@sunset.dev", content: "Medication reconciliation completed. Discontinued all non-comfort medications: metformin, simvastatin, aspirin. Simplified to morphine, lorazepam, glycopyrrolate, furosemide only." },
+  { patientName: "Robert Jackson", authorEmail: "nurse.priya.sharma@sunset.dev", content: "Linda made playlist of Robert's favorite jazz — Coltrane, Miles Davis. Playing softly at bedside. Even unresponsive, his breathing seems to ease with the music." },
+  { patientName: "Margaret Chen", authorEmail: "dr.james.whitfield@sunset.dev", content: "Temperature regulation impaired — patient alternating between feeling hot and cold. Layered blankets for easy adjustment. Room temperature set to 22C as compromise." },
+  { patientName: "Margaret Chen", authorEmail: "nurse.priya.sharma@sunset.dev", content: "Henry brought photo album today. Patient pointed at wedding photo and said 'beautiful' clearly. Rare lucid moment. Henry tearful but grateful for the connection." },
+  { patientName: "Harold Thompson", authorEmail: "dr.james.whitfield@sunset.dev", content: "Night sweats resolved with dexamethasone. Sleeping through without sheet changes needed. Betty reports improved rest for both of them. Continue current dose." },
+  { patientName: "Harold Thompson", authorEmail: "nurse.priya.sharma@sunset.dev", content: "Volunteer book companion started today — retired professor, discusses history audiobooks with Harold. Animated 40-minute conversation. Harold said 'best talk in months.'" },
+  { patientName: "Arthur Patel", authorEmail: "dr.james.whitfield@sunset.dev", content: "Anita reports Arthur briefly recognized her this morning — opened eyes, said her name, squeezed hand. Then returned to sleep. These moments of connection still occurring." },
+  { patientName: "Arthur Patel", authorEmail: "nurse.priya.sharma@sunset.dev", content: "All care now focused on comfort. Turning with draw sheet, minimal stimulation. Morphine via sublingual route as swallowing reflexes diminishing. Family maintaining vigil." },
+  { patientName: "Evelyn Garcia", authorEmail: "dr.elena.rodriguez@sunset.dev", content: "Constipation from opioids — 4 days without BM. Abdomen mildly distended. Adding docusate 100mg BID to senna. If no result in 24h, will try bisacodyl suppository." },
+  { patientName: "Evelyn Garcia", authorEmail: "nurse.ben.tanaka@sunset.dev", content: "Bowel regimen effective — comfortable BM this morning. Continue docusate/senna combination. Evelyn relieved. Remind Carlos to track bowel diary as discussed." },
+  { patientName: "James Washington", authorEmail: "dr.elena.rodriguez@sunset.dev", content: "Reviewing overall comfort: pain controlled, secretions managed, anxiety minimal. Ruth reports James seems at peace. Whiteboard nearby but using less — conserving energy for essential communication." },
+  { patientName: "James Washington", authorEmail: "nurse.ben.tanaka@sunset.dev", content: "Ruth brought James's favorite quilt from home — handmade by his mother. Placed over him during rest. Ruth says 'his mama is keeping him warm.' Comforting family symbolism." },
+  { patientName: "Helen Kim", authorEmail: "dr.elena.rodriguez@sunset.dev", content: "Susan asking about organ donation — explained that with Helen's condition, tissue donation may still be possible. Provided information. Susan will discuss with Thomas." },
+  { patientName: "Helen Kim", authorEmail: "nurse.ben.tanaka@sunset.dev", content: "Grandchildren visited briefly — 8 and 11 years old. Susan prepared them well. They drew pictures for grandmother's wall. Brief but meaningful. Children resilient." },
+  { patientName: "Gloria Nguyen", authorEmail: "dr.elena.rodriguez@sunset.dev", content: "Peripheral neuropathy developing in feet — tingling and numbness. Not causing significant distress. Gabapentin 100mg at bedtime if it worsens. Monitoring for now." },
+  { patientName: "Gloria Nguyen", authorEmail: "nurse.ben.tanaka@sunset.dev", content: "Linh staying overnight in family room. Gloria sleeping more peacefully knowing daughter is near. Call bell use decreased — Linh helping with repositioning and sips of water." },
+  { patientName: "Dorothy Williams", authorEmail: "dr.amara.okafor@sunset.dev", content: "Weekly team meeting update: Dorothy in gradual decline but comfortable. Carol coping well with support group. Current medication regimen effective. No changes indicated." },
+  { patientName: "Dorothy Williams", authorEmail: "nurse.priya.sharma@sunset.dev", content: "Carol brought Dorothy's cat Mr. Whiskers for a visit (facility pet therapy approved). Dorothy smiled and stroked him for 20 minutes. Most engaged she's been this week." },
+  { patientName: "Robert Jackson", authorEmail: "dr.amara.okafor@sunset.dev", content: "Terminal secretions managed adequately with glycopyrrolate. Suctioning not needed — would cause more distress than benefit. Linda understands the sounds are not causing Robert suffering." },
+  { patientName: "Harold Thompson", authorEmail: "dr.james.whitfield@sunset.dev", content: "Harold asking about legacy projects — wants to write short memoir about his time as a civil engineer. Setting up voice recording app on tablet for days when writing is too fatiguing." },
+  { patientName: "Evelyn Garcia", authorEmail: "dr.elena.rodriguez@sunset.dev", content: "Patricia flying back to Houston tomorrow. Evelyn handling separation well — 'I have my letters written, and Carlos has Patricia's number.' Mature acceptance." },
+  { patientName: "James Washington", authorEmail: "dr.elena.rodriguez@sunset.dev", content: "Skin mottling progressing up lower extremities. Blood pressure declining slowly — 90/55. Not intervening. Ruth at bedside reading Psalms quietly. Peaceful transition expected within days." },
+  { patientName: "Helen Kim", authorEmail: "dr.elena.rodriguez@sunset.dev", content: "Respirations 6/minute now. Long pauses. Family gathered — Susan, Thomas, grandchildren in hallway. Buddhist chanting playing softly. No signs of distress. Morphine available if needed." },
+  { patientName: "Gloria Nguyen", authorEmail: "dr.elena.rodriguez@sunset.dev", content: "Gloria weaker today — unable to sit up without assistance. Still folding small cranes in bed with Linh's help — total at 523. Determined spirit despite physical decline." },
 ];
-
-function pick<T>(arr: T[]): T {
-  return arr[Math.floor(Math.random() * arr.length)];
-}
-
-function pickN<T>(arr: T[], n: number): T[] {
-  const shuffled = [...arr].sort(() => Math.random() - 0.5);
-  return shuffled.slice(0, n);
-}
-
-async function main() {
-  console.log("Seeding clinical notes for demo patients...\n");
-
-  const allPatients = await db.select().from(patients);
-  if (allPatients.length === 0) {
-    console.log("No patients found. Run `npm run db:seed` first.");
-    process.exit(1);
-  }
-
-  // Get one practitioner per organization to use as the author.
-  const allPractitioners = await db.select().from(practitioners);
-  const practitionerByOrg = new Map<string, string>();
-  for (const p of allPractitioners) {
-    if (!practitionerByOrg.has(p.organizationId)) {
-      practitionerByOrg.set(p.organizationId, p.userId);
-    }
-  }
-
-  let totalNotesAdded = 0;
-
-  for (const patient of allPatients) {
-    const existingCount = await sql<{ count: number }[]>`
-      select count(*)::int as count
-        from public.patient_notes
-       where patient_id = ${patient.id}
-    `;
-    if (existingCount[0].count > 0) {
-      console.log(`  ↻ ${patient.name} already has ${existingCount[0].count} notes, skipping`);
-      continue;
-    }
-
-    const authorId = practitionerByOrg.get(patient.organizationId);
-    if (!authorId) {
-      console.log(`  ✗ ${patient.name}: no practitioner in org ${patient.organizationId}, skipping`);
-      continue;
-    }
-
-    const noteCount = 4 + Math.floor(Math.random() * 3); // 4-6 notes
-    const selected = pickN(NOTE_POOL, noteCount);
-
-    for (const content of selected) {
-      const embedding = await embedText(content);
-      const vec = vectorLiteral(embedding);
-      await sql`
-        insert into public.patient_notes
-          (organization_id, patient_id, author_id, content, embedding)
-        values
-          (${patient.organizationId}, ${patient.id}, ${authorId}, ${content}, ${vec}::vector)
-      `;
-      totalNotesAdded++;
-    }
-    console.log(`  ✓ ${patient.name}: added ${noteCount} notes`);
-  }
-
-  console.log(`\nDone. ${totalNotesAdded} notes added across ${allPatients.length} patients.`);
-  await sql.end();
-}
-
-main().catch((err) => {
-  console.error("Seed failed:", err);
-  process.exit(1);
-});
