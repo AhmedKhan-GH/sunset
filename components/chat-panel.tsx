@@ -248,7 +248,7 @@ function ChatMessages({
       const res = await fetch("/api/conversations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: text.slice(0, 60) }),
+        body: JSON.stringify({ title: text.length > 32 ? text.slice(0, 32) + "..." : text }),
       });
       if (res.ok) {
         created = await res.json();
