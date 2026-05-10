@@ -8,6 +8,7 @@ import { SunsetLogo } from "@/components/sunset-logo";
 
 export default function RegisterPage() {
   const [email, setEmail] = useState("");
+  const [inviteCode, setInviteCode] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState("");
@@ -28,6 +29,7 @@ export default function RegisterPage() {
 
     const formData = new FormData();
     formData.set("email", email);
+    formData.set("inviteCode", inviteCode);
     formData.set("password", password);
 
     const result = await register(formData);
@@ -69,8 +71,8 @@ export default function RegisterPage() {
           <SunsetLogo className="h-16 w-auto" gradientId="registerLogo" />
           <h1 className="text-2xl font-bold tracking-tight">Register</h1>
           <p className="text-center text-sm text-muted-foreground">
-            Set up your login credentials. Your email must already be on file
-            with your care team.
+            Set up your login credentials using the invite code provided by
+            your administrator.
           </p>
         </div>
 
@@ -89,6 +91,21 @@ export default function RegisterPage() {
             required
             className={inputClasses}
           />
+        </label>
+
+        <label className="flex flex-col gap-1">
+          <span className="text-sm font-medium">Invite code</span>
+          <input
+            type="text"
+            value={inviteCode}
+            onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
+            required
+            placeholder="e.g. A3B7K9X2"
+            className={inputClasses + " font-mono tracking-widest"}
+          />
+          <span className="text-xs text-muted-foreground">
+            Provided by your administrator or care team.
+          </span>
         </label>
 
         <label className="flex flex-col gap-1">

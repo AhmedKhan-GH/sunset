@@ -47,9 +47,9 @@ export default function LoginPage() {
         onSubmit={handleSubmit}
         className="flex w-full max-w-sm flex-col gap-4 p-8"
       >
-        <div className="flex flex-col items-center gap-2 pb-2">
-          <SunsetLogo className="h-20 w-auto" gradientId="loginLogo" />
-          <h1 className="text-2xl font-bold tracking-tight">SUNSET</h1>
+        <div className="flex flex-col items-center gap-3 pb-4">
+          <SunsetLogo className="h-80 w-auto" gradientId="loginLogo" />
+          <h1 className="text-7xl font-bold tracking-tight">SUNSET</h1>
           <span className="rounded-full bg-brand px-3 py-1 text-xs font-semibold uppercase tracking-widest text-white">
             Comfort. Dignity. Care.
           </span>

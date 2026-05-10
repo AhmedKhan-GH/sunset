@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getPatients, getMyOrganization, createPatient } from "../actions";
+import { InviteForm } from "@/components/invite-form";
 
 export default async function PatientsPage() {
   const [patients, organization] = await Promise.all([
@@ -14,7 +15,7 @@ export default async function PatientsPage() {
         <p className="mt-1 text-sm text-muted-foreground">{organization.name}</p>
       )}
 
-      <form action={createPatient} className="mt-6 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+      <InviteForm action={createPatient} className="mt-6 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <label className="flex flex-col gap-1">
             <span className="text-xs font-medium text-muted-foreground">Full name</span>
@@ -67,7 +68,7 @@ export default async function PatientsPage() {
             Add patient
           </button>
         </div>
-      </form>
+      </InviteForm>
 
       <ul className="mt-8 flex flex-col gap-2">
         {patients.map((p) => (

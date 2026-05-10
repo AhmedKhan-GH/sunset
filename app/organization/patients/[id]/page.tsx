@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getPatientWithRelatives, createRelative } from "../../actions";
 import { getNotes, createNote, resolveNoteContext } from "@/lib/notes/actions";
 import { NotesViewer } from "@/components/notes-viewer";
+import { InviteForm } from "@/components/invite-form";
 
 export default async function PatientDetailPage({
   params,
@@ -39,7 +40,7 @@ export default async function PatientDetailPage({
       <section className="mt-10">
         <h2 className="text-lg font-semibold">Relatives</h2>
 
-        <form action={addRelative} className="mt-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <InviteForm action={addRelative} className="mt-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <label className="flex flex-col gap-1">
               <span className="text-xs font-medium text-muted-foreground">Full name</span>
@@ -84,7 +85,7 @@ export default async function PatientDetailPage({
               Add relative
             </button>
           </div>
-        </form>
+        </InviteForm>
 
         <ul className="mt-6 flex flex-col gap-2">
           {relatives.map((r) => (

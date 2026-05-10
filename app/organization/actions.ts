@@ -3,10 +3,19 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { db, sql as rawSql } from "@/lib/db";
-import { profiles, practitioners, patients, relatives, organizations } from "@/lib/db/schema";
+import { profiles, practitioners, patients, relatives, organizations, inviteCodes } from "@/lib/db/schema";
 import { eq, sql } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+
+function generateInviteCode(): string {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let code = "";
+  for (let i = 0; i < 8; i++) {
+    code += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return code;
+}
 
 async function requireOrganizationUser() {
   const supabase = await createClient();
@@ -75,7 +84,7 @@ export async function getPractitioners() {
   }));
 }
 
-export async function createPractitioner(formData: FormData) {
+export async function createPractitioner(formData: FormData): Promise<{ inviteCode: string } | void> {
   const profile = await requireOrganizationAdmin();
   const admin = createAdminClient();
 
@@ -116,7 +125,15 @@ export async function createPractitioner(formData: FormData) {
     `;
   });
 
+  const code = generateInviteCode();
+  await db.insert(inviteCodes).values({
+    email: email.trim().toLowerCase(),
+    code,
+    createdBy: profile.userId,
+  });
+
   revalidatePath("/organization");
+  return { inviteCode: code };
 }
 
 export async function getPatients() {
@@ -127,7 +144,7 @@ export async function getPatients() {
     .where(eq(patients.organizationId, profile.organizationId));
 }
 
-export async function createPatient(formData: FormData) {
+export async function createPatient(formData: FormData): Promise<{ inviteCode: string } | void> {
   const profile = await requireOrganizationUser();
 
   const name = formData.get("name");
@@ -145,6 +162,8 @@ export async function createPatient(formData: FormData) {
   )
     return;
 
+  const trimmedEmail = typeof email === "string" && email.trim() ? email.trim().toLowerCase() : null;
+
   const [practitioner] = await db
     .select()
     .from(practitioners)
@@ -158,14 +177,26 @@ export async function createPatient(formData: FormData) {
         ${profile.organizationId},
         ${practitioner?.id ?? null},
         ${name.trim()},
-        ${typeof email === "string" && email.trim() ? email.trim() : null},
+        ${trimmedEmail},
         ${dateOfBirth.trim()},
         ${gender.trim()}
       )
     `;
   });
 
+  let inviteCode: string | undefined;
+  if (trimmedEmail) {
+    const code = generateInviteCode();
+    await db.insert(inviteCodes).values({
+      email: trimmedEmail,
+      code,
+      createdBy: profile.userId,
+    });
+    inviteCode = code;
+  }
+
   revalidatePath("/organization/patients");
+  if (inviteCode) return { inviteCode };
 }
 
 export async function getPatientWithRelatives(patientId: string) {
@@ -187,7 +218,7 @@ export async function getPatientWithRelatives(patientId: string) {
   return { patient, relatives: rels };
 }
 
-export async function createRelative(patientId: string, formData: FormData) {
+export async function createRelative(patientId: string, formData: FormData): Promise<{ inviteCode: string } | void> {
   const profile = await requireOrganizationUser();
 
   const name = formData.get("name");
@@ -202,6 +233,8 @@ export async function createRelative(patientId: string, formData: FormData) {
   )
     return;
 
+  const trimmedEmail = typeof email === "string" && email.trim() ? email.trim().toLowerCase() : null;
+
   await rawSql.begin(async (tx) => {
     await tx`SELECT set_config('request.jwt.claims', ${JSON.stringify({ sub: profile.userId })}, true)`;
     await tx`
@@ -209,13 +242,25 @@ export async function createRelative(patientId: string, formData: FormData) {
       VALUES (
         ${patientId},
         ${name.trim()},
-        ${typeof email === "string" && email.trim() ? email.trim() : null},
+        ${trimmedEmail},
         ${relationship.trim()}
       )
     `;
   });
 
+  let inviteCode: string | undefined;
+  if (trimmedEmail) {
+    const code = generateInviteCode();
+    await db.insert(inviteCodes).values({
+      email: trimmedEmail,
+      code,
+      createdBy: profile.userId,
+    });
+    inviteCode = code;
+  }
+
   revalidatePath(`/organization/patients/${patientId}`);
+  if (inviteCode) return { inviteCode };
 }
 
 export async function getAuditLogs() {

@@ -226,6 +226,33 @@ export const relatives = pgTable(
   ],
 ).enableRLS();
 
+export const inviteCodes = pgTable(
+  "invite_codes",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    email: text("email").notNull(),
+    code: text("code").notNull().unique(),
+    createdBy: uuid("created_by").notNull(),
+    usedAt: integer("used_at"),
+    createdAt: integer("created_at")
+      .notNull()
+      .default(sql`extract(epoch from now())::integer`),
+  },
+  () => [
+    pgPolicy("organization members can read invite codes they created", {
+      for: "select",
+      to: authenticatedRole,
+      using: sql`created_by = auth.uid()`,
+    }),
+    pgPolicy("platform admin can manage all invite codes", {
+      for: "all",
+      to: authenticatedRole,
+      using: isPlatformAdmin,
+      withCheck: isPlatformAdmin,
+    }),
+  ],
+).enableRLS();
+
 export const conversations = pgTable(
   "conversations",
   {

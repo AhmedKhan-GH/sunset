@@ -1,4 +1,5 @@
 import { getPractitioners, createPractitioner } from "./actions";
+import { InviteForm } from "@/components/invite-form";
 
 export default async function OrganizationPage() {
   const practitioners = await getPractitioners();
@@ -7,11 +8,11 @@ export default async function OrganizationPage() {
     <div className="mx-auto w-full max-w-3xl p-8">
       <h1 className="text-2xl font-semibold">Practitioners</h1>
       <p className="mt-1 text-sm text-muted-foreground">
-        Manage practitioners in your organization. New practitioners can set
-        their password at <code className="font-mono text-brand">/register</code>.
+        Manage practitioners in your organization. Share the invite code
+        securely so they can register at <code className="font-mono text-brand">/register</code>.
       </p>
 
-      <form action={createPractitioner} className="mt-6 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+      <InviteForm action={createPractitioner} className="mt-6 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <label className="flex flex-col gap-1">
             <span className="text-xs font-medium text-muted-foreground">Full name</span>
@@ -69,7 +70,7 @@ export default async function OrganizationPage() {
             Add practitioner
           </button>
         </div>
-      </form>
+      </InviteForm>
 
       <ul className="mt-8 flex flex-col gap-2">
         {practitioners.map((p) => (

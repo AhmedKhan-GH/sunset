@@ -3,7 +3,7 @@ import fs from "fs";
 import postgres from "postgres";
 import { drizzle } from "drizzle-orm/postgres-js";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
-import { profiles, organizations, practitioners, patients, relatives } from "./schema";
+import { profiles, organizations, practitioners, patients, relatives, inviteCodes } from "./schema";
 import { createClient } from "@supabase/supabase-js";
 import { embedText, vectorLiteral } from "../llm/embed";
 import { patientNotesData } from "./seed-notes";
@@ -48,6 +48,15 @@ async function getOrCreateAuthUser(
   }
 
   return data.user.id;
+}
+
+function generateInviteCode(): string {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let code = "";
+  for (let i = 0; i < 8; i++) {
+    code += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return code;
 }
 
 async function seed() {
@@ -134,6 +143,23 @@ async function seed() {
     organizationId: harborPalliative.id,
   });
 
+  // Generate invite codes for org admins (created by platform admin)
+  const orgAdminInvites: { email: string; code: string }[] = [];
+  for (const entry of [
+    { email: "maria.santos@sunset.dev", createdBy: platformAdminId },
+    { email: "david.chen@sunset.dev", createdBy: platformAdminId },
+  ]) {
+    const code = generateInviteCode();
+    await db.insert(inviteCodes).values({
+      email: entry.email,
+      code,
+      createdBy: entry.createdBy,
+    });
+    orgAdminInvites.push({ email: entry.email, code });
+  }
+  console.log("  invite codes for org admins:");
+  orgAdminInvites.forEach((i) => console.log(`    ${i.email}: ${i.code}`));
+
   // ── Practitioners ───────────────────────────────────────────────────────
   console.log("\npractitioners");
 
@@ -164,7 +190,11 @@ async function seed() {
     }).returning();
     practitionerRecords[p.email] = practitioner.id;
     practitionerUserIds[p.email] = userId;
-    console.log(`  ${p.email} (${p.specialty})`);
+
+    const code = generateInviteCode();
+    const createdBy = p.organizationId === sunriseHospice.id ? sunriseAdminId : harborAdminId;
+    await db.insert(inviteCodes).values({ email: p.email, code, createdBy });
+    console.log(`  ${p.email} (${p.specialty}) invite: ${code}`);
   }
 
   // ── Patients ────────────────────────────────────────────────────────────
@@ -273,7 +303,15 @@ async function seed() {
       .returning();
 
     patientRecords[p.name] = patient.id;
-    console.log(`  ${p.name}${p.email ? "" : " (no portal login)"}`);
+
+    if (p.email) {
+      const code = generateInviteCode();
+      const createdBy = p.organizationId === sunriseHospice.id ? sunriseAdminId : harborAdminId;
+      await db.insert(inviteCodes).values({ email: p.email, code, createdBy });
+      console.log(`  ${p.name} invite: ${code}`);
+    } else {
+      console.log(`  ${p.name} (no portal login)`);
+    }
   }
 
   // ── Relatives ───────────────────────────────────────────────────────────
@@ -379,9 +417,14 @@ async function seed() {
       relationship: r.relationship,
     });
 
-    console.log(
-      `  ${r.name} (${r.relationship} of ${r.patientName})${r.email ? "" : " (no portal login)"}`,
-    );
+    if (r.email) {
+      const code = generateInviteCode();
+      const createdBy = patientOrgMap[r.patientName] === sunriseHospice.id ? sunriseAdminId : harborAdminId;
+      await db.insert(inviteCodes).values({ email: r.email, code, createdBy });
+      console.log(`  ${r.name} (${r.relationship} of ${r.patientName}) invite: ${code}`);
+    } else {
+      console.log(`  ${r.name} (${r.relationship} of ${r.patientName}) (no portal login)`);
+    }
   }
 
   // ── Patient Notes ──────────────────────────────────────────────────────

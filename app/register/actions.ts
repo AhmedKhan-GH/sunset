@@ -2,8 +2,8 @@
 
 import { createAdminClient } from "@/lib/supabase/admin";
 import { db } from "@/lib/db";
-import { profiles, patients, relatives } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { profiles, patients, relatives, inviteCodes } from "@/lib/db/schema";
+import { eq, and, isNull, sql } from "drizzle-orm";
 
 type RegisterResult =
   | { success: true }
@@ -12,14 +12,32 @@ type RegisterResult =
 export async function register(formData: FormData): Promise<RegisterResult> {
   const email = formData.get("email");
   const password = formData.get("password");
+  const inviteCode = formData.get("inviteCode");
 
   if (typeof email !== "string" || !email.trim())
     return { success: false, error: "Email is required." };
   if (typeof password !== "string" || password.length < 6)
     return { success: false, error: "Password must be at least 6 characters." };
+  if (typeof inviteCode !== "string" || !inviteCode.trim())
+    return { success: false, error: "Invite code is required." };
 
   const admin = createAdminClient();
   const trimmedEmail = email.trim().toLowerCase();
+  const trimmedCode = inviteCode.trim().toUpperCase();
+
+  const [invite] = await db
+    .select()
+    .from(inviteCodes)
+    .where(
+      and(
+        eq(inviteCodes.email, trimmedEmail),
+        eq(inviteCodes.code, trimmedCode),
+        isNull(inviteCodes.usedAt),
+      ),
+    );
+
+  if (!invite)
+    return { success: false, error: "Invalid invite code. Contact your administrator." };
 
   const { data: existingUsers } = await admin.auth.admin.listUsers();
   const existingUser = existingUsers?.users.find(
@@ -40,6 +58,7 @@ export async function register(formData: FormData): Promise<RegisterResult> {
 
     await admin.auth.admin.updateUserById(existingUser.id, { password });
 
+    await markInviteUsed(invite.id);
     return { success: true };
   }
 
@@ -71,6 +90,7 @@ export async function register(formData: FormData): Promise<RegisterResult> {
       .set({ userId: data.user.id })
       .where(eq(patients.id, patient.id));
 
+    await markInviteUsed(invite.id);
     return { success: true };
   }
 
@@ -110,6 +130,7 @@ export async function register(formData: FormData): Promise<RegisterResult> {
       .set({ userId: data.user.id })
       .where(eq(relatives.id, relative.id));
 
+    await markInviteUsed(invite.id);
     return { success: true };
   }
 
@@ -117,4 +138,11 @@ export async function register(formData: FormData): Promise<RegisterResult> {
     success: false,
     error: "This email is not associated with any account. Contact your care team to be added.",
   };
+}
+
+async function markInviteUsed(inviteId: string) {
+  await db
+    .update(inviteCodes)
+    .set({ usedAt: sql`extract(epoch from now())::integer` })
+    .where(eq(inviteCodes.id, inviteId));
 }
