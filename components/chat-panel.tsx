@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useId } from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 
@@ -216,9 +216,10 @@ function ChatMessages({
 }) {
   const [input, setInput] = useState("");
   const convIdRef = useRef(conversationId);
+  const chatInstanceId = useId();
 
   const { messages, sendMessage, status, error } = useChat({
-    ...(conversationId ? { id: conversationId } : {}),
+    id: chatInstanceId,
     messages: initialMessages,
     transport: new DefaultChatTransport({
       api: "/api/chat",
@@ -259,7 +260,8 @@ function ChatMessages({
     sendMessage({ text });
 
     if (created) {
-      onConversationCreated(created.id, created.title);
+      const { id, title } = created;
+      setTimeout(() => onConversationCreated(id, title), 0);
     }
   }
 
