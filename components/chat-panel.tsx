@@ -30,6 +30,7 @@ function storedToUIMessages(stored: StoredMessage[]) {
 export function ChatPanel() {
   const [conversationList, setConversationList] = useState<Conversation[]>([]);
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
+  const [activeTitle, setActiveTitle] = useState<string | null>(null);
   const [initialMessages, setInitialMessages] = useState<
     { id: string; role: "user" | "assistant"; parts: { type: "text"; text: string }[] }[]
   >([]);
@@ -45,7 +46,9 @@ export function ChatPanel() {
   }, [loadConversations]);
 
   async function selectConversation(id: string) {
+    const conv = conversationList.find((c) => c.id === id);
     setActiveConversationId(id);
+    setActiveTitle(conv?.title ?? null);
     const res = await fetch(`/api/conversations/${id}/messages`);
     if (res.ok) {
       setInitialMessages(storedToUIMessages(await res.json()));
@@ -57,16 +60,29 @@ export function ChatPanel() {
 
   function clearChat() {
     setActiveConversationId(null);
+    setActiveTitle(null);
     setInitialMessages([]);
     setChatKey((k) => k + 1);
   }
 
   function handleConversationCreated(id: string, title: string | null) {
     setActiveConversationId(id);
+    setActiveTitle(title);
     setConversationList((prev) => [
       { id, title, createdAt: Date.now() / 1000, updatedAt: Date.now() / 1000 },
       ...prev,
     ]);
+  }
+
+  function handleTitleChange(title: string) {
+    setActiveTitle(title);
+    if (activeConversationId) {
+      setConversationList((prev) =>
+        prev.map((c) =>
+          c.id === activeConversationId ? { ...c, title } : c,
+        ),
+      );
+    }
   }
 
   return (
@@ -86,26 +102,103 @@ export function ChatPanel() {
                   : "hover:bg-zinc-50 dark:hover:bg-zinc-900"
               }`}
             >
-              {c.title
-                ? c.title.length > 60
-                  ? c.title.slice(0, 60) + "…"
-                  : c.title
-                : "New conversation"}
+              {c.title || "New conversation"}
             </button>
           ))}
         </div>
       </div>
 
       <div className="flex flex-1 flex-col">
+        <ChatHeader
+          conversationId={activeConversationId}
+          title={activeTitle}
+          onTitleChange={handleTitleChange}
+          onNewChat={clearChat}
+        />
         <ChatMessages
           key={chatKey}
           conversationId={activeConversationId}
           initialMessages={initialMessages}
           onConversationCreated={handleConversationCreated}
           onMessageSent={loadConversations}
-          onNewChat={clearChat}
         />
       </div>
+    </div>
+  );
+}
+
+function ChatHeader({
+  conversationId,
+  title,
+  onTitleChange,
+  onNewChat,
+}: {
+  conversationId: string | null;
+  title: string | null;
+  onTitleChange: (title: string) => void;
+  onNewChat: () => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [editValue, setEditValue] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  function startEditing() {
+    if (!conversationId) return;
+    setEditValue(title || "");
+    setEditing(true);
+    setTimeout(() => inputRef.current?.select(), 0);
+  }
+
+  async function saveTitle() {
+    setEditing(false);
+    const trimmed = editValue.trim();
+    if (!conversationId || trimmed === (title || "")) return;
+    onTitleChange(trimmed);
+    await fetch(`/api/conversations/${conversationId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title: trimmed }),
+    });
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent) {
+    if (e.key === "Enter") saveTitle();
+    if (e.key === "Escape") setEditing(false);
+  }
+
+  return (
+    <div className="flex items-center justify-between border-b px-4 py-2">
+      <div className="min-w-0 flex-1">
+        {conversationId ? (
+          editing ? (
+            <input
+              ref={inputRef}
+              value={editValue}
+              onChange={(e) => setEditValue(e.target.value)}
+              onBlur={saveTitle}
+              onKeyDown={handleKeyDown}
+              className="w-full rounded bg-transparent px-1 text-sm font-medium outline-none ring-1 ring-zinc-300 dark:ring-zinc-600"
+              autoFocus
+            />
+          ) : (
+            <button
+              onClick={startEditing}
+              className="truncate text-sm font-medium hover:text-zinc-600 dark:hover:text-zinc-300"
+              title="Click to rename"
+            >
+              {title || "New conversation"}
+            </button>
+          )
+        ) : (
+          <span className="text-sm font-medium text-zinc-400">New conversation</span>
+        )}
+      </div>
+      <button
+        onClick={onNewChat}
+        className="ml-3 shrink-0 rounded border px-2.5 py-1 text-xs text-zinc-500 hover:bg-zinc-50 hover:text-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+      >
+        New chat
+      </button>
     </div>
   );
 }
@@ -115,13 +208,11 @@ function ChatMessages({
   initialMessages,
   onConversationCreated,
   onMessageSent,
-  onNewChat,
 }: {
   conversationId: string | null;
   initialMessages: { id: string; role: "user" | "assistant"; parts: { type: "text"; text: string }[] }[];
   onConversationCreated: (id: string, title: string | null) => void;
   onMessageSent: () => void;
-  onNewChat: () => void;
 }) {
   const [input, setInput] = useState("");
   const convIdRef = useRef(conversationId);
@@ -230,17 +321,7 @@ function ChatMessages({
         )}
       </div>
 
-      {messages.length > 0 && (
-        <div className="border-t px-4 pt-2">
-          <button
-            onClick={onNewChat}
-            className="text-xs text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200"
-          >
-            New chat
-          </button>
-        </div>
-      )}
-      <form onSubmit={handleSubmit} className={`${messages.length > 0 ? "" : "border-t"} p-4`}>
+      <form onSubmit={handleSubmit} className="border-t p-4">
         <div className="flex gap-2">
           <input
             value={input}
