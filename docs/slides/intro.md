@@ -261,7 +261,7 @@ layout: default
 
 <div class="grid grid-cols-12 gap-10 items-start mt-0">
 <div class="col-span-5">
-<div class="text-[2.6rem] leading-[1.1] font-semibold tracking-tight text-[#1f2937] mb-5">AI that analyzes and drafts clinical observations.</div>
+<div class="text-[2.6rem] leading-[1.1] font-semibold tracking-tight text-[#1f2937] mb-5">AI that analyzes and drafts clinical observations</div>
 <div class="text-[1rem] leading-relaxed text-[#1f2937]/65 font-medium" style="max-width: 32ch;">From admission to family update, Sunset handles the work that comes between caregivers and care.</div>
 </div>
 <div class="col-span-7 flex flex-col gap-3">
@@ -316,7 +316,7 @@ layout: default
 <div class="relative h-full grid grid-rows-[auto_1fr_auto] px-16 py-10 z-10">
 
 <div class="flex flex-col items-center justify-center text-center">
-<div class="text-[2.4rem] leading-[1.1] font-semibold tracking-tight text-[#1f2937] mb-3" style="max-width: 22ch;">Security by construction, not by audit.</div>
+<div class="text-[2.4rem] leading-[1.1] font-semibold tracking-tight text-[#1f2937] mb-3" style="max-width: 22ch;">Security by construction, not by audit</div>
 <div class="text-[1rem] leading-relaxed text-[#1f2937]/65 font-medium mb-7 mx-auto" style="max-width: 56ch;">HIPAA compliance is baked into the database and the model layer. It's how every record is read, written, and reasoned over.</div>
 
 <div class="grid grid-cols-2 gap-5 mx-auto" style="max-width: 56rem;">
@@ -389,7 +389,7 @@ layout: default
 <div class="relative h-full grid grid-rows-[auto_1fr_auto] px-16 py-10 z-10">
 
 <div class="flex flex-col items-center justify-center text-center">
-<div class="text-[2.4rem] leading-[1.1] font-semibold tracking-tight text-[#1f2937] mb-3" style="max-width: 22ch;">Where Sunset goes from here.</div>
+<div class="text-[2.4rem] leading-[1.1] font-semibold tracking-tight text-[#1f2937] mb-3" style="max-width: 22ch;">Where Sunset goes from here</div>
 <div class="text-[1rem] leading-relaxed text-[#1f2937]/65 font-medium mb-7 mx-auto" style="max-width: 56ch;">A working demo is the start. The next chapter widens the door — to more caregivers, more capital, and more capable models.</div>
 
 <div class="grid grid-cols-3 gap-5 mx-auto" style="max-width: 60rem;">
