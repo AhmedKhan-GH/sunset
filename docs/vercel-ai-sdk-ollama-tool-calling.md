@@ -19,12 +19,11 @@ Run Ollama in a container with no external network access:
 docker network create --internal ollama-net
 
 # Run Ollama container on the isolated network
-docker run -d \
+docker run -d --rm \
   --name ollama \
   --network ollama-net \
   -p 127.0.0.1:11434:11434 \
   -v ollama-data:/root/.ollama \
-  --restart unless-stopped \
   ollama/ollama
 
 # Pull a model (temporarily connect to bridge network for download)
@@ -48,13 +47,12 @@ curl http://127.0.0.1:11434/api/generate -d '{"model":"gpt-oss:20b","prompt":"he
 
 ```bash
 # NVIDIA GPU passthrough
-docker run -d \
+docker run -d --rm \
   --name ollama \
   --gpus all \
   --network ollama-net \
   -p 127.0.0.1:11434:11434 \
   -v ollama-data:/root/.ollama \
-  --restart unless-stopped \
   ollama/ollama
 ```
 
