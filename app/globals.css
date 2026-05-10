@@ -8,12 +8,12 @@
   --color-muted: #f5f5f5;
   --color-border: #e5e5e5;
   --color-border-strong: #d4d4d4;
-  --color-muted-foreground: #6b7280;
+  --color-muted-foreground: #4b5563;
 
-  --color-brand: #a78bfa;
+  --color-brand: #7c3aed;
   --color-brand-soft: #c4b5fd;
 
-  --color-status-stable: #10b981;
+  --color-status-stable: #047857;
   --color-status-attention: #f59e0b;
   --color-status-urgent: #ef4444;
 }
@@ -39,8 +39,15 @@
   --font-mono: var(--font-geist-mono);
 }
 
+html {
+  /* Larger base for elderly readers (WHO/AARP recommend a 18px floor for
+     long-form reading). All Tailwind rem-based utilities scale with this. */
+  font-size: 18px;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  line-height: 1.55;
 }
