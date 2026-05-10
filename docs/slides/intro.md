@@ -11,7 +11,7 @@ colorSchema: light
 ---
 
 <div class="absolute inset-0 overflow-hidden pointer-events-none">
-  <div class="absolute left-1/2 w-[480px] h-[480px] rounded-full" style="top: 100%; transform: translate(-50%, -55%); background: linear-gradient(135deg, #fbbf24 0%, #f472b6 55%, #a78bfa 100%); opacity: 0.85; box-shadow: 0 0 10px 6px rgba(255,255,255,1), 0 0 50px 30px rgba(255,255,255,0.75), 0 0 140px 70px rgba(255,255,255,0.45);" />
+  <div class="absolute left-1/2 w-[480px] h-[480px] rounded-full" style="top: 100%; transform: translate(-50%, -55%); background: linear-gradient(135deg, #fbbf24 0%, #f472b6 55%, #a78bfa 100%); opacity: 0.85; box-shadow: 0 0 14px 6px rgba(124,110,166,0.9), 0 0 30px 15px rgba(255,255,255,1), 0 0 80px 40px rgba(255,255,255,0.7), 0 0 160px 80px rgba(255,255,255,0.4);" />
   <div class="absolute -top-32 -right-32 w-[520px] h-[520px] rounded-full opacity-25 blur-3xl" style="background: radial-gradient(circle, #fbbf24 0%, #f472b6 50%, transparent 80%);" />
   <div class="absolute -bottom-32 -left-32 w-[420px] h-[420px] rounded-full opacity-20 blur-3xl" style="background: radial-gradient(circle, #a78bfa 0%, transparent 70%);" />
   <svg class="absolute bottom-0 left-0 w-full" viewBox="0 0 1280 220" preserveAspectRatio="none" style="height: 28%; overflow: visible;">
@@ -43,8 +43,8 @@ colorSchema: light
 
   <div class="flex items-end justify-between text-[0.72rem] tracking-[0.18em] uppercase text-[#1f2937]/55 font-semibold">
     <div class="flex items-center gap-2">
-      <span class="inline-block w-1.5 h-1.5 rounded-full bg-[#047857]" />
-      DavisHacks 2026
+      <span class="inline-block w-1.5 h-1.5 rounded-full bg-[#1f2937]/55" />
+      HackDavis 2026
     </div>
   </div>
 
