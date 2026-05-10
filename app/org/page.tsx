@@ -5,7 +5,7 @@ export default async function OrgPage() {
 
   return (
     <div className="mx-auto w-full max-w-2xl p-8">
-      <h1 className="text-2xl font-semibold">Team</h1>
+      <h1 className="text-2xl font-semibold">Practitioners</h1>
       <p className="mt-1 text-sm text-zinc-500">
         Manage practitioners in your organization. New accounts are created with
         the temporary password <code className="font-mono">changeme123</code>.

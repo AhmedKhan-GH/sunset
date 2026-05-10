@@ -35,7 +35,7 @@ export default async function OrgLayout({ children }: { children: React.ReactNod
           <nav className="flex gap-4 text-sm">
             {isOrgAdmin && (
               <Link href="/org" className="hover:underline">
-                Team
+                Practitioners
               </Link>
             )}
             <Link href="/org/patients" className="hover:underline">
