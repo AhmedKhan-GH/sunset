@@ -54,6 +54,7 @@ export function NotesViewer({
   const [searchResults, setSearchResults] = useState<Note[] | null>(null);
   const [selectedPatientId, setSelectedPatientId] = useState(initialPatientId ?? "");
   const [isSearching, startSearch] = useTransition();
+  const [, startLoad] = useTransition();
   const [isAdding, startAdd] = useTransition();
 
   const effectivePatientId = fixedPatientId ?? (selectedPatientId || undefined);
@@ -110,7 +111,7 @@ export function NotesViewer({
     setSearchQuery("");
     setSearchResults(null);
     if (mode === "newest" || mode === "oldest") {
-      startSearch(async () => {
+      startLoad(async () => {
         const fetched = await getNotes(effectivePatientId);
         setNotes(fetched);
       });
@@ -123,7 +124,7 @@ export function NotesViewer({
     if ((viewMode === "semantic" || viewMode === "keyword") && (searchQuery.trim() || (viewMode === "keyword" && fuzzy.trim()))) {
       runSearch(searchQuery, filterOut, fuzzy, pid, viewMode);
     } else {
-      startSearch(async () => {
+      startLoad(async () => {
         const filtered = await getNotes(pid);
         setNotes(filtered);
         setSearchResults(null);
