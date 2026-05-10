@@ -34,7 +34,7 @@ export async function POST(req: Request) {
 
     const [conv] = await db
       .insert(conversations)
-      .values({ userId: user.id, title: firstText?.slice(0, 100) ?? null })
+      .values({ userId: user.id, title: firstText?.slice(0, 60) ?? null })
       .returning();
     activeConversationId = conv.id;
   }
