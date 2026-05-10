@@ -12,7 +12,7 @@
     "db:migrate": "drizzle-kit migrate",
     "db:generate": "drizzle-kit generate",
     "db:seed": "tsx lib/db/seed.ts",
-    "ollama:start": "docker run -d --rm --name ollama -p 127.0.0.1:11434:11434 -v ~/.ollama:/root/.ollama ollama/ollama",
+    "ollama:start": "docker run -d --rm --name ollama -p 127.0.0.1:11434:11434 -v ollama-data:/root/.ollama ollama/ollama",
     "ollama:stop": "docker stop ollama",
     "ollama:pull": "docker network connect bridge ollama && docker exec ollama ollama pull gpt-oss:20b && docker network disconnect bridge ollama",
     "infra:start": "supabase start && npm run ollama:start",
