@@ -55,12 +55,14 @@ export default async function PatientsPage() {
             </select>
           </label>
         </div>
-        <button
-          type="submit"
-          className="mt-4 w-full rounded bg-black px-4 py-2 text-sm text-white dark:bg-white dark:text-black sm:w-auto"
-        >
-          Add patient
-        </button>
+        <div className="mt-4 flex justify-end">
+          <button
+            type="submit"
+            className="rounded bg-black px-4 py-2 text-sm text-white dark:bg-white dark:text-black"
+          >
+            Add patient
+          </button>
+        </div>
       </form>
 
       <ul className="mt-8 flex flex-col gap-2">

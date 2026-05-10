@@ -9,6 +9,7 @@ type Note = {
   patientId: string;
   patientName: string;
   authorId: string;
+  authorName?: string | null;
   content: string;
   createdAt: string;
   similarity?: number;
@@ -151,10 +152,6 @@ export function NotesViewer({
     });
   }
 
-  function authorLabel(note: Note) {
-    if (!userId) return undefined;
-    return note.authorId === userId ? "You" : "Care team";
-  }
 
   const displayNotes = (() => {
     const source = searchResults ?? notes;
@@ -279,7 +276,7 @@ export function NotesViewer({
                 </Link>
               )}
               <span>{new Date(note.createdAt).toLocaleString()}</span>
-              {authorLabel(note) && <span>{authorLabel(note)}</span>}
+              {note.authorName && <span>{note.authorName}</span>}
               {note.similarity != null && (
                 <span className="rounded bg-zinc-100 px-1.5 py-0.5 dark:bg-zinc-800">
                   {(note.similarity * 100).toFixed(0)}% match

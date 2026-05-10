@@ -83,7 +83,7 @@ export async function getNotes(patientId?: string) {
 
   let query = supabase
     .from("patient_notes")
-    .select("id, patient_id, author_id, content, created_at, patients(name)")
+    .select("id, patient_id, author_id, content, created_at, patients(name), profiles(name)")
     .order("created_at", { ascending: false })
     .limit(50);
 
@@ -99,6 +99,7 @@ export async function getNotes(patientId?: string) {
     patientId: n.patient_id as string,
     patientName: (n.patients as { name: string } | null)?.name ?? "Unknown",
     authorId: n.author_id as string,
+    authorName: (n.profiles as { name: string } | null)?.name ?? null,
     content: n.content as string,
     createdAt: n.created_at as string,
   }));
@@ -149,10 +150,12 @@ export async function searchNotes(
       select
         n.id, n.patient_id, n.author_id, n.content, n.created_at,
         p.name as patient_name,
+        pr.name as author_name,
         (1 - (n.embedding <=> ${vec}::vector))::float as similarity,
         (1 - (n.embedding <=> ${negVec}::vector))::float as filtered_similarity
       from public.patient_notes n
       join public.patients p on p.id = n.patient_id
+      left join public.profiles pr on pr.user_id = n.author_id
       where n.organization_id = ${ctx.organizationId}
         ${patientFilter}
         and n.embedding is not null
@@ -165,6 +168,7 @@ export async function searchNotes(
       patientId: r.patient_id as string,
       patientName: r.patient_name as string,
       authorId: r.author_id as string,
+      authorName: (r.author_name as string) ?? null,
       content: r.content as string,
       createdAt: r.created_at as string,
       similarity: Number(r.similarity),
@@ -176,9 +180,11 @@ export async function searchNotes(
     select
       n.id, n.patient_id, n.author_id, n.content, n.created_at,
       p.name as patient_name,
+      pr.name as author_name,
       (1 - (n.embedding <=> ${vec}::vector))::float as similarity
     from public.patient_notes n
     join public.patients p on p.id = n.patient_id
+    left join public.profiles pr on pr.user_id = n.author_id
     where n.organization_id = ${ctx.organizationId}
       ${patientFilter}
       and n.embedding is not null
@@ -191,6 +197,7 @@ export async function searchNotes(
     patientId: r.patient_id as string,
     patientName: r.patient_name as string,
     authorId: r.author_id as string,
+    authorName: (r.author_name as string) ?? null,
     content: r.content as string,
     createdAt: r.created_at as string,
     similarity: Number(r.similarity),
@@ -227,10 +234,12 @@ export async function keywordSearchNotes(
   const results = await sql`
     select
       n.id, n.patient_id, n.author_id, n.content, n.created_at,
-      p.name as patient_name
+      p.name as patient_name,
+      pr.name as author_name
       ${fuzzyTerm ? sql`, word_similarity(${fuzzyTerm}, n.content)::float as fuzzy_score` : sql``}
     from public.patient_notes n
     join public.patients p on p.id = n.patient_id
+    left join public.profiles pr on pr.user_id = n.author_id
     where n.organization_id = ${ctx.organizationId}
       ${patientFilter}
       ${keywordFilter}
@@ -244,6 +253,7 @@ export async function keywordSearchNotes(
     patientId: r.patient_id as string,
     patientName: r.patient_name as string,
     authorId: r.author_id as string,
+    authorName: (r.author_name as string) ?? null,
     content: r.content as string,
     createdAt: r.created_at as string,
     fuzzyScore: r.fuzzy_score != null ? Number(r.fuzzy_score) : undefined,

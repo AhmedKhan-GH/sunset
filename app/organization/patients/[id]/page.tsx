@@ -75,12 +75,14 @@ export default async function PatientDetailPage({
               </select>
             </label>
           </div>
-          <button
-            type="submit"
-            className="mt-4 w-full rounded bg-black px-4 py-2 text-sm text-white dark:bg-white dark:text-black sm:w-auto"
-          >
-            Add relative
-          </button>
+          <div className="mt-4 flex justify-end">
+            <button
+              type="submit"
+              className="rounded bg-black px-4 py-2 text-sm text-white dark:bg-white dark:text-black"
+            >
+              Add relative
+            </button>
+          </div>
         </form>
 
         <ul className="mt-6 flex flex-col gap-2">
