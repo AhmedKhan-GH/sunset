@@ -11,6 +11,7 @@ Module-by-module log of Supabase capability work. One file per module from `SUPA
 | 5 | pg_cron | ✅ done | [`modules/05-pg-cron.md`](modules/05-pg-cron.md) |
 | 6–12 | Storage / Edge Functions / pg_net / Vault / Webhooks | (out of scope for this branch) | — |
 | 13 | Logs / audit | ✅ done | [`modules/13-logs-audit.md`](modules/13-logs-audit.md) |
+| — | Clinician-side search UI | ✅ done | [`modules/clinician-search.md`](modules/clinician-search.md) |
 
 ## How to read these docs
 
