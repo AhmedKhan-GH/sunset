@@ -7,9 +7,9 @@ export default async function PatientNotesPage() {
   const addNote = createNote.bind(null, ctx.patientId!);
 
   return (
-    <div className="mx-auto w-full max-w-2xl p-8">
+    <div className="mx-auto w-full max-w-3xl p-8">
       <h1 className="text-2xl font-semibold">My Notes</h1>
-      <p className="mt-1 text-sm text-zinc-500">
+      <p className="mt-1 text-sm text-muted-foreground">
         Notes from your care team and yourself.
       </p>
       <div className="mt-6">
