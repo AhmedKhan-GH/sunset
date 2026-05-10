@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useEffect, useTransition } from "react";
 import { searchNotes, type NoteResult } from "./actions";
 
 const EXAMPLES = [
@@ -11,19 +11,28 @@ const EXAMPLES = [
   "high temperature with chills",
 ];
 
+const DEBOUNCE_MS = 1000;
+
 export function SearchNotes() {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<NoteResult[]>([]);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState("");
-  const [submittedQuery, setSubmittedQuery] = useState("");
+  const [activeQuery, setActiveQuery] = useState("");
 
   function runSearch(q: string) {
+    const trimmed = q.trim();
+    if (!trimmed) {
+      setResults([]);
+      setActiveQuery("");
+      setError("");
+      return;
+    }
     setError("");
-    setSubmittedQuery(q);
+    setActiveQuery(trimmed);
     startTransition(async () => {
       try {
-        const r = await searchNotes(q);
+        const r = await searchNotes(trimmed);
         setResults(r);
       } catch (e: any) {
         setError(e.message ?? String(e));
@@ -32,15 +41,29 @@ export function SearchNotes() {
     });
   }
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!query.trim()) return;
-    runSearch(query);
-  }
+  // Debounced live search: wait 1s after the user stops typing, then search.
+  useEffect(() => {
+    const trimmed = query.trim();
+    if (!trimmed) {
+      setResults([]);
+      setActiveQuery("");
+      return;
+    }
+    if (trimmed === activeQuery) return; // already searched for this exact text
+    const t = setTimeout(() => runSearch(trimmed), DEBOUNCE_MS);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query]);
 
   return (
     <div>
-      <form onSubmit={handleSubmit} className="flex gap-2">
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          runSearch(query);
+        }}
+        className="flex gap-2"
+      >
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
@@ -53,24 +76,24 @@ export function SearchNotes() {
           disabled={pending || !query.trim()}
           className="rounded bg-black px-4 py-2 text-white disabled:opacity-50 dark:bg-white dark:text-black"
         >
-          {pending ? "Searching…" : "Search"}
+          {pending ? "…" : "Search"}
         </button>
       </form>
 
-      <div className="mt-3 flex flex-wrap gap-2">
+      <div className="mt-3 flex flex-wrap items-center gap-2">
         <span className="text-xs text-zinc-400">try:</span>
         {EXAMPLES.map((e) => (
           <button
             key={e}
-            onClick={() => {
-              setQuery(e);
-              runSearch(e);
-            }}
+            onClick={() => setQuery(e)}
             className="rounded-full border px-3 py-1 text-xs text-zinc-600 hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-900"
           >
             {e}
           </button>
         ))}
+        {pending && (
+          <span className="text-xs text-zinc-400">searching…</span>
+        )}
       </div>
 
       {error && (
@@ -79,9 +102,9 @@ export function SearchNotes() {
         </p>
       )}
 
-      {submittedQuery && !pending && results.length === 0 && !error && (
+      {activeQuery && !pending && results.length === 0 && !error && (
         <p className="mt-6 text-sm text-zinc-400">
-          No results for &ldquo;{submittedQuery}&rdquo;.
+          No results for &ldquo;{activeQuery}&rdquo;.
         </p>
       )}
 
@@ -89,7 +112,7 @@ export function SearchNotes() {
         <div className="mt-6">
           <p className="text-xs text-zinc-500">
             {results.length} most semantically similar notes for &ldquo;
-            {submittedQuery}&rdquo;
+            {activeQuery}&rdquo;
           </p>
           <ul className="mt-3 space-y-2">
             {results.map((r) => (
