@@ -3,7 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { db } from "@/lib/db";
-import { profiles, patients, relatives, organizations } from "@/lib/db/schema";
+import { profiles, practitioners, patients, relatives, organizations } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
@@ -49,10 +49,10 @@ export async function getPractitioners() {
   const profile = await requireOrganizationAdmin();
   const admin = createAdminClient();
 
-  const practitioners = await db
+  const practitionerList = await db
     .select()
-    .from(profiles)
-    .where(eq(profiles.organizationId, profile.organizationId));
+    .from(practitioners)
+    .where(eq(practitioners.organizationId, profile.organizationId));
 
   const {
     data: { users },
@@ -61,9 +61,10 @@ export async function getPractitioners() {
     users.map((u) => [u.id, u.email ?? ""]),
   );
 
-  return practitioners
-    .filter((p) => p.role === "practitioner")
-    .map((p) => ({ ...p, email: emailById[p.userId] ?? "" }));
+  return practitionerList.map((p) => ({
+    ...p,
+    email: emailById[p.userId] ?? "",
+  }));
 }
 
 export async function createPractitioner(formData: FormData) {
@@ -83,6 +84,11 @@ export async function createPractitioner(formData: FormData) {
   await db.insert(profiles).values({
     userId: data.user.id,
     role: "practitioner",
+    organizationId: profile.organizationId,
+  });
+
+  await db.insert(practitioners).values({
+    userId: data.user.id,
     organizationId: profile.organizationId,
   });
 
@@ -114,9 +120,14 @@ export async function createPatient(formData: FormData) {
   )
     return;
 
+  const [practitioner] = await db
+    .select()
+    .from(practitioners)
+    .where(eq(practitioners.userId, profile.userId));
+
   await db.insert(patients).values({
     organizationId: profile.organizationId,
-    practitionerId: profile.userId,
+    practitionerId: practitioner?.id,
     name: name.trim(),
     dateOfBirth: dateOfBirth.trim(),
     gender: gender.trim(),

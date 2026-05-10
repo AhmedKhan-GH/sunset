@@ -2,7 +2,7 @@ import dotenv from "dotenv";
 import postgres from "postgres";
 import { drizzle } from "drizzle-orm/postgres-js";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
-import { profiles, organizations, patients, relatives } from "./schema";
+import { profiles, organizations, practitioners, patients, relatives } from "./schema";
 import { createClient } from "@supabase/supabase-js";
 
 dotenv.config({ path: ".env.local" });
@@ -100,23 +100,30 @@ async function seed() {
   console.log("\npractitioners");
 
   const practitionerData = [
-    { email: "dr.amara.okafor@sunset.dev", organizationId: sunriseHospice.id },
-    { email: "dr.james.whitfield@sunset.dev", organizationId: sunriseHospice.id },
-    { email: "nurse.priya.sharma@sunset.dev", organizationId: sunriseHospice.id },
-    { email: "dr.elena.rodriguez@sunset.dev", organizationId: harborPalliative.id },
-    { email: "nurse.ben.tanaka@sunset.dev", organizationId: harborPalliative.id },
+    { email: "dr.amara.okafor@sunset.dev", organizationId: sunriseHospice.id, specialty: "Palliative Medicine", licenseNumber: "MD-2019-44821", npi: "1234567890" },
+    { email: "dr.james.whitfield@sunset.dev", organizationId: sunriseHospice.id, specialty: "Geriatric Medicine", licenseNumber: "MD-2015-31205", npi: "2345678901" },
+    { email: "nurse.priya.sharma@sunset.dev", organizationId: sunriseHospice.id, specialty: "Hospice Nursing", licenseNumber: "RN-2018-78432", npi: "3456789012" },
+    { email: "dr.elena.rodriguez@sunset.dev", organizationId: harborPalliative.id, specialty: "Pain Management", licenseNumber: "MD-2017-55910", npi: "4567890123" },
+    { email: "nurse.ben.tanaka@sunset.dev", organizationId: harborPalliative.id, specialty: "Palliative Nursing", licenseNumber: "RN-2020-62187", npi: "5678901234" },
   ];
 
-  const practitionerIds: Record<string, string> = {};
+  const practitionerRecords: Record<string, string> = {};
   for (const p of practitionerData) {
-    const id = await getOrCreateAuthUser(p.email, "admin123");
+    const userId = await getOrCreateAuthUser(p.email, "admin123");
     await db.insert(profiles).values({
-      userId: id,
+      userId,
       role: "practitioner",
       organizationId: p.organizationId,
     });
-    practitionerIds[p.email] = id;
-    console.log(`  ${p.email}`);
+    const [practitioner] = await db.insert(practitioners).values({
+      userId,
+      organizationId: p.organizationId,
+      specialty: p.specialty,
+      licenseNumber: p.licenseNumber,
+      npi: p.npi,
+    }).returning();
+    practitionerRecords[p.email] = practitioner.id;
+    console.log(`  ${p.email} (${p.specialty})`);
   }
 
   // ── Patients ────────────────────────────────────────────────────────────
@@ -207,7 +214,7 @@ async function seed() {
       .insert(patients)
       .values({
         organizationId: p.organizationId,
-        practitionerId: practitionerIds[p.practitionerEmail],
+        practitionerId: practitionerRecords[p.practitionerEmail],
         userId,
         name: p.name,
         dateOfBirth: p.dateOfBirth,
@@ -317,7 +324,7 @@ async function seed() {
   await client.end();
   console.log("\n✓ seed complete");
   console.log(
-    `  ${Object.keys(practitionerIds).length + 3} staff accounts, ` +
+    `  ${Object.keys(practitionerRecords).length + 3} staff accounts, ` +
       `${patientData.length} patients, ` +
       `${relativeData.length} relatives`,
   );

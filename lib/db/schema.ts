@@ -64,6 +64,53 @@ export const profiles = pgTable(
   ],
 ).enableRLS();
 
+export const practitioners = pgTable(
+  "practitioners",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: uuid("user_id")
+      .notNull()
+      .unique()
+      .references(() => profiles.userId, { onDelete: "cascade" }),
+    organizationId: uuid("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    specialty: text("specialty"),
+    licenseNumber: text("license_number"),
+    npi: text("npi"),
+    createdAt: integer("created_at")
+      .notNull()
+      .default(sql`extract(epoch from now())::integer`),
+    updatedAt: integer("updated_at")
+      .notNull()
+      .default(sql`extract(epoch from now())::integer`),
+  },
+  (table) => [
+    pgPolicy("platform admin can manage practitioners", {
+      for: "all",
+      to: authenticatedRole,
+      using: isPlatformAdmin,
+      withCheck: isPlatformAdmin,
+    }),
+    pgPolicy("organization admin can manage organization practitioners", {
+      for: "all",
+      to: authenticatedRole,
+      using: sql`${callerRole} = 'organization_admin' AND ${table.organizationId} = ${callerOrganizationId}`,
+      withCheck: sql`${callerRole} = 'organization_admin' AND ${table.organizationId} = ${callerOrganizationId}`,
+    }),
+    pgPolicy("practitioners can read own record", {
+      for: "select",
+      to: authenticatedRole,
+      using: sql`${table.userId} = auth.uid()`,
+    }),
+    pgPolicy("organization members can read organization practitioners", {
+      for: "select",
+      to: authenticatedRole,
+      using: sql`${table.organizationId} = ${callerOrganizationId}`,
+    }),
+  ],
+).enableRLS();
+
 export const patients = pgTable(
   "patients",
   {
@@ -72,7 +119,7 @@ export const patients = pgTable(
       .notNull()
       .references(() => organizations.id, { onDelete: "cascade" }),
     practitionerId: uuid("practitioner_id").references(
-      () => profiles.userId,
+      () => practitioners.id,
       { onDelete: "set null" },
     ),
     userId: uuid("user_id").unique(),
