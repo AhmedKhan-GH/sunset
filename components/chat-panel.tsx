@@ -216,7 +216,6 @@ function ChatMessages({
 }) {
   const [input, setInput] = useState("");
   const convIdRef = useRef(conversationId);
-  const pendingTitleRef = useRef<string | null>(null);
 
   const { messages, sendMessage, status, error } = useChat({
     ...(conversationId ? { id: conversationId } : {}),
@@ -224,15 +223,6 @@ function ChatMessages({
     transport: new DefaultChatTransport({
       api: "/api/chat",
       body: () => ({ conversationId: convIdRef.current }),
-      fetch: async (url, init) => {
-        const res = await fetch(url, init);
-        const newConvId = res.headers.get("X-Conversation-Id");
-        if (newConvId && !convIdRef.current) {
-          convIdRef.current = newConvId;
-          onConversationCreated(newConvId, pendingTitleRef.current);
-        }
-        return res;
-      },
     }),
     onFinish() {
       onMessageSent();
@@ -253,7 +243,16 @@ function ChatMessages({
     setInput("");
 
     if (!convIdRef.current) {
-      pendingTitleRef.current = text.slice(0, 60);
+      const res = await fetch("/api/conversations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: text.slice(0, 60) }),
+      });
+      if (res.ok) {
+        const conv = await res.json();
+        convIdRef.current = conv.id;
+        onConversationCreated(conv.id, conv.title);
+      }
     }
 
     await sendMessage({ text });

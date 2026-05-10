@@ -25,19 +25,7 @@ export async function POST(req: Request) {
 
   const { messages: chatMessages, conversationId } = await req.json();
 
-  let activeConversationId: string | null = conversationId ?? null;
-
-  if (user && !activeConversationId) {
-    const firstText = chatMessages
-      .find((m: { role: string }) => m.role === "user")
-      ?.parts?.find((p: { type: string }) => p.type === "text")?.text;
-
-    const [conv] = await db
-      .insert(conversations)
-      .values({ userId: user.id, title: firstText?.slice(0, 60) ?? null })
-      .returning();
-    activeConversationId = conv.id;
-  }
+  const activeConversationId: string | null = conversationId ?? null;
 
   if (user && activeConversationId) {
     const lastUserMessage = chatMessages
@@ -97,9 +85,5 @@ export async function POST(req: Request) {
     },
   });
 
-  return result.toUIMessageStreamResponse({
-    headers: activeConversationId
-      ? { "X-Conversation-Id": activeConversationId }
-      : undefined,
-  });
+  return result.toUIMessageStreamResponse();
 }
