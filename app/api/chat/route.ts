@@ -1,4 +1,4 @@
-import { streamText } from "ai";
+import { streamText, convertToModelMessages } from "ai";
 import { ollama, DEFAULT_MODEL } from "@/lib/ai/ollama";
 
 export async function POST(req: Request) {
@@ -10,7 +10,7 @@ export async function POST(req: Request) {
       "You are a helpful clinical assistant for Sunset, a hospice care platform. " +
       "Answer questions clearly and concisely. " +
       "You do not provide medical diagnoses or prescriptions.",
-    messages,
+    messages: await convertToModelMessages(messages),
   });
 
   return result.toUIMessageStreamResponse();
