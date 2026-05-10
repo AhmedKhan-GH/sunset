@@ -39,11 +39,21 @@ export function ChatPanel() {
                     : "bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100"
                 }`}
               >
-                {m.parts
-                  .filter((p) => p.type === "text")
-                  .map((p, i) => (
-                    <span key={i}>{p.text}</span>
-                  ))}
+                {m.parts.map((p, i) => {
+                  if (p.type === "text") {
+                    return <span key={i}>{p.text}</span>;
+                  }
+                  if (p.type === "tool-sendNotification" && p.state === "output-available") {
+                    const { title, message } = p.output as { success: boolean; title: string; message: string };
+                    return (
+                      <div key={i} className="my-1 rounded border border-green-300 bg-green-50 px-3 py-2 dark:border-green-700 dark:bg-green-950">
+                        <p className="font-medium text-green-900 dark:text-green-100">{title}</p>
+                        <p className="text-green-700 dark:text-green-300">{message}</p>
+                      </div>
+                    );
+                  }
+                  return null;
+                })}
               </div>
             </div>
           ))}
