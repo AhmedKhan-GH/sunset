@@ -2,22 +2,110 @@ import { streamText, convertToModelMessages, stepCountIs } from "ai";
 import { ollama, DEFAULT_MODEL } from "@/lib/ai/ollama";
 import { createClient } from "@/lib/supabase/server";
 import { db } from "@/lib/db";
-import { conversations, messages, profiles, organizations } from "@/lib/db/schema";
+import {
+  conversations,
+  messages,
+  profiles,
+  organizations,
+  patients,
+  practitioners,
+  relatives,
+} from "@/lib/db/schema";
 import { eq, sql } from "drizzle-orm";
 import { addPatientNoteTool } from "@/lib/ai/tools/notes-tools";
 import { searchNotesTool, recentNotesTool } from "@/lib/ai/tools/search-tools";
 import {
-  listMyPatientsTool,
   findPatientByNameTool,
   getPatientDetailsTool,
-  listOrganizationPractitionersTool,
 } from "@/lib/ai/tools/roster-tools";
-import {
-  getMyOrganizationTool,
-  getMyCareTeamTool,
-  getMyRecentNotesTool,
-  getMyRelativesTool,
-} from "@/lib/ai/tools/self-tools";
+
+async function buildSessionContext(userId: string) {
+  const [profile] = await db
+    .select()
+    .from(profiles)
+    .where(eq(profiles.userId, userId));
+  if (!profile || !profile.organizationId) return null;
+
+  const [org] = await db
+    .select()
+    .from(organizations)
+    .where(eq(organizations.id, profile.organizationId));
+
+  const context: string[] = [
+    `User: ${profile.name ?? "Unknown"} (${profile.role.replaceAll("_", " ")})`,
+    `Organization: ${org?.name ?? "Unknown"}`,
+  ];
+
+  if (profile.role === "organization_admin" || profile.role === "practitioner") {
+    const patientList = await db
+      .select({ id: patients.id, name: patients.name })
+      .from(patients)
+      .where(eq(patients.organizationId, profile.organizationId));
+
+    const practitionerList = await db
+      .select({
+        userId: practitioners.userId,
+        specialty: practitioners.specialty,
+      })
+      .from(practitioners)
+      .where(eq(practitioners.organizationId, profile.organizationId));
+
+    const practitionerProfiles = await Promise.all(
+      practitionerList.map(async (p) => {
+        const [pr] = await db
+          .select({ name: profiles.name })
+          .from(profiles)
+          .where(eq(profiles.userId, p.userId));
+        return { name: pr?.name ?? "Unknown", specialty: p.specialty };
+      }),
+    );
+
+    context.push(
+      `Patients (${patientList.length}): ${patientList.map((p) => `${p.name} [${p.id}]`).join(", ")}`,
+    );
+    context.push(
+      `Practitioners: ${practitionerProfiles.map((p) => `${p.name}${p.specialty ? ` (${p.specialty})` : ""}`).join(", ")}`,
+    );
+  }
+
+  if (profile.role === "patient") {
+    const [patient] = await db
+      .select()
+      .from(patients)
+      .where(eq(patients.userId, userId));
+    if (patient) {
+      context.push(`Your patient record: ${patient.name} [${patient.id}]`);
+      const rels = await db
+        .select({ name: relatives.name, relationship: relatives.relationship })
+        .from(relatives)
+        .where(eq(relatives.patientId, patient.id));
+      if (rels.length > 0) {
+        context.push(`Your relatives: ${rels.map((r) => `${r.name} (${r.relationship})`).join(", ")}`);
+      }
+    }
+  }
+
+  if (profile.role === "relative") {
+    const [rel] = await db
+      .select()
+      .from(relatives)
+      .where(eq(relatives.userId, userId));
+    if (rel) {
+      const [patient] = await db
+        .select({ id: patients.id, name: patients.name })
+        .from(patients)
+        .where(eq(patients.id, rel.patientId));
+      if (patient) {
+        context.push(`You are ${rel.name} (${rel.relationship} of ${patient.name} [${patient.id}])`);
+      }
+    }
+  }
+
+  return {
+    contextBlock: context.join("\n"),
+    orgSystemPrompt: org?.systemPrompt ?? null,
+  };
+}
 
 export async function POST(req: Request) {
   const supabase = await createClient();
@@ -29,21 +117,7 @@ export async function POST(req: Request) {
 
   const activeConversationId: string | null = conversationId ?? null;
 
-  // Load organization system prompt for the current user
-  let orgSystemPrompt: string | null = null;
-  if (user) {
-    const [profile] = await db
-      .select({ organizationId: profiles.organizationId })
-      .from(profiles)
-      .where(eq(profiles.userId, user.id));
-    if (profile?.organizationId) {
-      const [org] = await db
-        .select({ systemPrompt: organizations.systemPrompt })
-        .from(organizations)
-        .where(eq(organizations.id, profile.organizationId));
-      orgSystemPrompt = org?.systemPrompt ?? null;
-    }
-  }
+  const session = user ? await buildSessionContext(user.id) : null;
 
   if (user && activeConversationId) {
     const lastUserMessage = chatMessages
@@ -76,6 +150,7 @@ export async function POST(req: Request) {
       "Use this to interpret relative time references ('today', 'this week', 'yesterday')",
       "and to populate since/until filters in search tools accurately.",
       "",
+      ...(session ? ["SESSION CONTEXT:", session.contextBlock, ""] : []),
       "Guidelines:",
       "- Answer directly and completely. If the information exists in the notes, provide it.",
       "- Quote or paraphrase specific notes when relevant so the user can verify your answer.",
@@ -92,21 +167,15 @@ export async function POST(req: Request) {
       "",
       "TOOLS — every tool enforces role-based access via the user's session.",
       "If a tool returns { error: \"...\" }, relay the error briefly; do NOT retry.",
-      ...(orgSystemPrompt ? ["", "ORGANIZATION INSTRUCTIONS:", orgSystemPrompt] : []),
+      ...(session?.orgSystemPrompt ? ["", "ORGANIZATION INSTRUCTIONS:", session.orgSystemPrompt] : []),
     ].join("\n"),
     messages: await convertToModelMessages(chatMessages),
     tools: {
       searchNotes: searchNotesTool,
       recentNotes: recentNotesTool,
       addPatientNote: addPatientNoteTool,
-      listMyPatients: listMyPatientsTool,
       findPatientByName: findPatientByNameTool,
       getPatientDetails: getPatientDetailsTool,
-      listOrganizationPractitioners: listOrganizationPractitionersTool,
-      getMyOrganization: getMyOrganizationTool,
-      getMyCareTeam: getMyCareTeamTool,
-      getMyRecentNotes: getMyRecentNotesTool,
-      getMyRelatives: getMyRelativesTool,
     },
     stopWhen: stepCountIs(8),
     async onFinish({ text, toolCalls }) {
