@@ -13,6 +13,8 @@ export type NoteResult = {
   similarity: number;
 };
 
+export type SearchMode = "most_similar" | "least_similar";
+
 async function requireClinician() {
   const supabase = await createClient();
   const {
@@ -31,7 +33,10 @@ async function requireClinician() {
   }
 }
 
-export async function searchNotes(query: string): Promise<NoteResult[]> {
+export async function searchNotes(
+  query: string,
+  mode: SearchMode = "most_similar",
+): Promise<NoteResult[]> {
   await requireClinician();
 
   const trimmed = query.trim();
@@ -40,15 +45,28 @@ export async function searchNotes(query: string): Promise<NoteResult[]> {
   const vec = await embedText(trimmed);
   const lit = vectorLiteral(vec);
 
-  const rows = await sql<NoteResult[]>`
-    select id,
-           category,
-           symptom_text,
-           (1 - (embedding <=> ${lit}::vector))::float as similarity
-      from public.symptom_demo
-     order by embedding <=> ${lit}::vector
-     limit 10
-  `;
+  // <=> is cosine distance: 0 = identical, 2 = opposite.
+  // ASC = most similar first; DESC = least similar (farthest) first.
+  const rows =
+    mode === "least_similar"
+      ? await sql<NoteResult[]>`
+          select id,
+                 category,
+                 symptom_text,
+                 (1 - (embedding <=> ${lit}::vector))::float as similarity
+            from public.symptom_demo
+           order by embedding <=> ${lit}::vector desc
+           limit 10
+        `
+      : await sql<NoteResult[]>`
+          select id,
+                 category,
+                 symptom_text,
+                 (1 - (embedding <=> ${lit}::vector))::float as similarity
+            from public.symptom_demo
+           order by embedding <=> ${lit}::vector asc
+           limit 10
+        `;
 
   return rows;
 }

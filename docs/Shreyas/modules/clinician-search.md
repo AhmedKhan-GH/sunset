@@ -58,6 +58,18 @@ Three things worth knowing about this shape:
 2. **Server Action, not Route Handler.** The clinician's "type and see results" pattern doesn't need streaming or external callers, so a Server Action is shorter and gives us cookie-based auth automatically.
 3. **postgres-js direct, not Drizzle.** We need a `vector` literal cast (`'[v1,v2,...]'::vector`), and Drizzle's typed query builder doesn't model that cleanly. Direct SQL is simpler.
 
+## 3.5 Two search modes — most & least similar
+
+The page has two independent search fields, both with their own 1-second debounce:
+
+- **Most similar** (default) — `ORDER BY embedding <=> qv ASC`. Returns the top 10 nearest entries. This is the everyday clinician query: "show me everything related to this concept."
+- **Least similar** — `ORDER BY embedding <=> qv DESC`. Returns the top 10 *farthest* entries. Useful for:
+  - Contrast queries: "show me what this patient has been through that *isn't* about pain"
+  - Sanity-checking semantic boundaries — see what the embedding considers totally unrelated to the query
+  - Surfacing recordings unlike a particular concept (e.g., farthest from "anxiety" might surface medical/clinical-shorthand recordings for triage)
+
+Both modes route through the same `searchNotes(query, mode)` Server Action — only the SQL `ORDER BY` direction changes. No re-embedding, no extra index, instant.
+
 ## 4. The live-search pattern (1-second debounce)
 
 ```ts
@@ -139,7 +151,6 @@ Query: "patient seems exhausted and unwell" → returns whatever category the em
 
 ## 9. What's planned next
 
-- **Negative / contrast search** — find the *least* similar items (lowest cosine similarity). Useful for "show me what's unusual for this patient" or for triangulating queries.
 - **Hybrid keyword + semantic** — add `pg_trgm` or `tsvector` keyword matching, fuse with the cosine ranking. Catches the action-verb failure mode in §8.1.
 - **Patient scoping** — once we have real `utterances` with `patient_id`, the search action must filter by patient and respect RLS. Right now it's an unscoped corpus.
 - **Re-ranking** — use a small cross-encoder for the top 50 results to refine ordering. Slower but more accurate.
