@@ -21,6 +21,8 @@ type Patient = {
   name: string;
 };
 
+type ViewMode = "semantic" | "keyword" | "newest" | "oldest";
+
 export function NotesViewer({
   initialNotes,
   patients,
@@ -32,7 +34,6 @@ export function NotesViewer({
   showAddForm,
   addNotePlaceholder,
   addNoteAction,
-  revalidatePath: revalidate,
 }: {
   initialNotes: Note[];
   patients?: Patient[];
@@ -44,13 +45,12 @@ export function NotesViewer({
   showAddForm?: boolean;
   addNotePlaceholder?: string;
   addNoteAction?: (formData: FormData) => Promise<void>;
-  revalidatePath?: string;
 }) {
   const [notes, setNotes] = useState(initialNotes);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterOut, setFilterOut] = useState("");
   const [fuzzy, setFuzzy] = useState("");
-  const [searchMode, setSearchMode] = useState<"semantic" | "keyword">("semantic");
+  const [viewMode, setViewMode] = useState<ViewMode>("newest");
   const [searchResults, setSearchResults] = useState<Note[] | null>(null);
   const [selectedPatientId, setSelectedPatientId] = useState(initialPatientId ?? "");
   const [isSearching, startSearch] = useTransition();
@@ -58,7 +58,11 @@ export function NotesViewer({
 
   const effectivePatientId = fixedPatientId ?? (selectedPatientId || undefined);
 
-  function runSearch(query: string, filter: string, fuzzyVal: string, patientId: string | undefined, mode: "semantic" | "keyword") {
+  function runSearch(query: string, filter: string, fuzzyVal: string, patientId: string | undefined, mode: ViewMode) {
+    if (mode === "newest" || mode === "oldest") {
+      setSearchResults(null);
+      return;
+    }
     if (!query.trim() && !(mode === "keyword" && fuzzyVal.trim())) {
       setSearchResults(null);
       return;
@@ -84,35 +88,40 @@ export function NotesViewer({
 
   function handleSearch(query: string) {
     setSearchQuery(query);
-    runSearch(query, filterOut, fuzzy, effectivePatientId, searchMode);
+    runSearch(query, filterOut, fuzzy, effectivePatientId, viewMode);
   }
 
   function handleFilterOut(filter: string) {
     setFilterOut(filter);
     if (searchQuery.trim()) {
-      runSearch(searchQuery, filter, fuzzy, effectivePatientId, searchMode);
+      runSearch(searchQuery, filter, fuzzy, effectivePatientId, viewMode);
     }
   }
 
   function handleFuzzy(val: string) {
     setFuzzy(val);
-    runSearch(searchQuery, filterOut, val, effectivePatientId, searchMode);
+    runSearch(searchQuery, filterOut, val, effectivePatientId, viewMode);
   }
 
-  function handleModeToggle(mode: "semantic" | "keyword") {
-    setSearchMode(mode);
+  function handleModeToggle(mode: ViewMode) {
+    setViewMode(mode);
     setFilterOut("");
     setFuzzy("");
-    if (searchQuery.trim()) {
-      runSearch(searchQuery, "", "", effectivePatientId, mode);
+    setSearchQuery("");
+    setSearchResults(null);
+    if (mode === "newest" || mode === "oldest") {
+      startSearch(async () => {
+        const fetched = await getNotes(effectivePatientId);
+        setNotes(fetched);
+      });
     }
   }
 
   function handlePatientFilter(patientId: string) {
     setSelectedPatientId(patientId);
     const pid = patientId || undefined;
-    if (searchQuery.trim() || (searchMode === "keyword" && fuzzy.trim())) {
-      runSearch(searchQuery, filterOut, fuzzy, pid, searchMode);
+    if ((viewMode === "semantic" || viewMode === "keyword") && (searchQuery.trim() || (viewMode === "keyword" && fuzzy.trim()))) {
+      runSearch(searchQuery, filterOut, fuzzy, pid, viewMode);
     } else {
       startSearch(async () => {
         const filtered = await getNotes(pid);
@@ -146,7 +155,18 @@ export function NotesViewer({
     return note.authorId === userId ? "You" : "Care team";
   }
 
-  const displayNotes = searchResults ?? notes;
+  const displayNotes = (() => {
+    const source = searchResults ?? notes;
+    if (viewMode === "oldest") {
+      return [...source].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+    }
+    if (viewMode === "newest") {
+      return [...source].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    }
+    return source;
+  })();
+
+  const isSearchMode = viewMode === "semantic" || viewMode === "keyword";
 
   return (
     <div className="flex flex-col gap-4">
@@ -169,62 +189,62 @@ export function NotesViewer({
         </form>
       )}
 
-      {showPatientFilter && patients && (
-        <select
-          value={selectedPatientId}
-          onChange={(e) => handlePatientFilter(e.target.value)}
-          className="rounded border px-3 py-2 text-sm"
-        >
-          <option value="">All patients</option>
-          {patients.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.name}
-            </option>
-          ))}
-        </select>
-      )}
-
-      <div className="flex gap-2 text-sm">
-        <button
-          onClick={() => handleModeToggle("semantic")}
-          className={`rounded px-3 py-1 ${searchMode === "semantic" ? "bg-black text-white dark:bg-white dark:text-black" : "bg-zinc-100 dark:bg-zinc-800"}`}
-        >
-          Semantic
-        </button>
-        <button
-          onClick={() => handleModeToggle("keyword")}
-          className={`rounded px-3 py-1 ${searchMode === "keyword" ? "bg-black text-white dark:bg-white dark:text-black" : "bg-zinc-100 dark:bg-zinc-800"}`}
-        >
-          Keyword
-        </button>
+      <div className="flex flex-wrap items-center gap-2 text-sm">
+        {(["newest", "oldest", "semantic", "keyword"] as ViewMode[]).map((mode) => (
+          <button
+            key={mode}
+            onClick={() => handleModeToggle(mode)}
+            className={`rounded px-3 py-1 capitalize ${viewMode === mode ? "bg-black text-white dark:bg-white dark:text-black" : "bg-zinc-100 dark:bg-zinc-800"}`}
+          >
+            {mode}
+          </button>
+        ))}
+        {showPatientFilter && patients && (
+          <select
+            value={selectedPatientId}
+            onChange={(e) => handlePatientFilter(e.target.value)}
+            className="ml-auto rounded border px-3 py-1.5 text-sm"
+          >
+            <option value="">All patients</option>
+            {patients.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+          </select>
+        )}
       </div>
 
-      <input
-        type="text"
-        placeholder={searchMode === "semantic" ? "Include — finds notes with similar meaning" : "Exact — case-insensitive substring match"}
-        value={searchQuery}
-        onChange={(e) => handleSearch(e.target.value)}
-        className="rounded border px-3 py-2 text-sm"
-      />
+      {isSearchMode && (
+        <>
+          <input
+            type="text"
+            placeholder={viewMode === "semantic" ? "Include — finds notes with similar meaning" : "Exact — case-insensitive substring match"}
+            value={searchQuery}
+            onChange={(e) => handleSearch(e.target.value)}
+            className="rounded border px-3 py-2 text-sm"
+          />
 
-      {searchMode === "semantic" && (
-        <input
-          type="text"
-          placeholder="Exclude — demotes notes with similar meaning"
-          value={filterOut}
-          onChange={(e) => handleFilterOut(e.target.value)}
-          className="rounded border px-3 py-2 text-sm"
-        />
-      )}
+          {viewMode === "semantic" && (
+            <input
+              type="text"
+              placeholder="Exclude — demotes notes with similar meaning"
+              value={filterOut}
+              onChange={(e) => handleFilterOut(e.target.value)}
+              className="rounded border px-3 py-2 text-sm"
+            />
+          )}
 
-      {searchMode === "keyword" && (
-        <input
-          type="text"
-          placeholder="Fuzzy — tolerates typos and misspellings"
-          value={fuzzy}
-          onChange={(e) => handleFuzzy(e.target.value)}
-          className="rounded border px-3 py-2 text-sm"
-        />
+          {viewMode === "keyword" && (
+            <input
+              type="text"
+              placeholder="Fuzzy — tolerates typos and misspellings"
+              value={fuzzy}
+              onChange={(e) => handleFuzzy(e.target.value)}
+              className="rounded border px-3 py-2 text-sm"
+            />
+          )}
+        </>
       )}
 
       {isSearching && (
