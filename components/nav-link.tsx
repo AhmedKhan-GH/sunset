@@ -20,7 +20,12 @@ export function NavLink({
   return (
     <Link
       href={href}
-      className={isActive ? "font-medium underline" : "hover:underline"}
+      className={
+        isActive
+          ? "border-b-2 border-brand px-3 py-2 text-sm font-semibold text-brand"
+          : "border-b-2 border-transparent px-3 py-2 text-sm font-medium text-slate-600 hover:text-slate-900"
+      }
+      aria-current={isActive ? "page" : undefined}
     >
       {children}
     </Link>
