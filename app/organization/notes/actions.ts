@@ -26,40 +26,32 @@ async function requireOrganizationMember() {
     redirect("/");
   if (!profile.organizationId) redirect("/");
 
-  return { user, profile: profile as typeof profile & { organizationId: string } };
+  return { user, profile: profile as typeof profile & { organizationId: string }, supabase };
 }
 
 export async function getOrganizationNotes(patientId?: string) {
-  const { profile } = await requireOrganizationMember();
+  const { supabase } = await requireOrganizationMember();
 
-  const notes = patientId
-    ? await sql`
-        select n.id, n.patient_id, n.author_id, n.content, n.created_at,
-               p.name as patient_name
-        from public.patient_notes n
-        join public.patients p on p.id = n.patient_id
-        where n.organization_id = ${profile.organizationId}
-          and n.patient_id = ${patientId}
-        order by n.created_at desc
-        limit 50
-      `
-    : await sql`
-        select n.id, n.patient_id, n.author_id, n.content, n.created_at,
-               p.name as patient_name
-        from public.patient_notes n
-        join public.patients p on p.id = n.patient_id
-        where n.organization_id = ${profile.organizationId}
-        order by n.created_at desc
-        limit 50
-      `;
+  let query = supabase
+    .from("patient_notes")
+    .select("id, patient_id, author_id, content, created_at, patients(name)")
+    .order("created_at", { ascending: false })
+    .limit(50);
 
-  return notes.map((n) => ({
-    id: n.id,
-    patientId: n.patient_id,
-    patientName: n.patient_name,
-    content: n.content,
-    createdAt: n.created_at,
-    authorId: n.author_id,
+  if (patientId) {
+    query = query.eq("patient_id", patientId);
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+
+  return (data ?? []).map((n: Record<string, unknown>) => ({
+    id: n.id as string,
+    patientId: n.patient_id as string,
+    patientName: (n.patients as { name: string } | null)?.name ?? "Unknown",
+    content: n.content as string,
+    createdAt: n.created_at as string,
+    authorId: n.author_id as string,
   }));
 }
 

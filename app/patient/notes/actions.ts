@@ -21,30 +21,30 @@ async function requirePatient() {
     .where(eq(patients.userId, user.id));
 
   if (!patient) redirect("/");
-  return { user, patient };
+  return { user, patient, supabase };
 }
 
 export async function getMyNotes() {
-  const { patient } = await requirePatient();
+  const { user, supabase } = await requirePatient();
 
-  const notes = await sql`
-    select id, author_id, content, created_at
-    from public.patient_notes
-    where patient_id = ${patient.id}
-    order by created_at desc
-    limit 50
-  `;
+  const { data, error } = await supabase
+    .from("patient_notes")
+    .select("id, author_id, content, created_at")
+    .order("created_at", { ascending: false })
+    .limit(50);
 
-  return notes.map((n) => ({
-    id: n.id,
-    content: n.content,
-    createdAt: n.created_at,
-    isOwnNote: n.author_id === patient.userId,
+  if (error) throw error;
+
+  return (data ?? []).map((n: Record<string, unknown>) => ({
+    id: n.id as string,
+    content: n.content as string,
+    createdAt: n.created_at as string,
+    isOwnNote: n.author_id === user.id,
   }));
 }
 
 export async function addMyNote(formData: FormData) {
-  const { user, patient } = await requirePatient();
+  const { user, patient, supabase } = await requirePatient();
 
   const content = formData.get("content");
   if (typeof content !== "string" || !content.trim()) return;
@@ -52,12 +52,17 @@ export async function addMyNote(formData: FormData) {
   const embedding = await embedText(content.trim());
   const vec = vectorLiteral(embedding);
 
-  await sql`
-    insert into public.patient_notes
-      (organization_id, patient_id, author_id, content, embedding)
-    values
-      (${patient.organizationId}, ${patient.id}, ${user.id}, ${content.trim()}, ${vec}::vector)
-  `;
+  const { error } = await supabase
+    .from("patient_notes")
+    .insert({
+      organization_id: patient.organizationId,
+      patient_id: patient.id,
+      author_id: user.id,
+      content: content.trim(),
+      embedding: vec,
+    });
+
+  if (error) throw error;
 
   revalidatePath("/patient/notes");
 }

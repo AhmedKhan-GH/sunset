@@ -27,11 +27,11 @@ async function requireOrganizationPractitioner() {
     redirect("/");
   if (!profile.organizationId) redirect("/");
 
-  return { user, profile: profile as typeof profile & { organizationId: string } };
+  return { user, profile: profile as typeof profile & { organizationId: string }, supabase };
 }
 
 async function requireNoteAccess(patientId: string) {
-  const { user, profile } = await requireOrganizationPractitioner();
+  const { user, profile, supabase } = await requireOrganizationPractitioner();
 
   const [patient] = await db
     .select()
@@ -41,28 +41,21 @@ async function requireNoteAccess(patientId: string) {
   if (!patient || patient.organizationId !== profile.organizationId)
     redirect("/organization/patients");
 
-  return { user, profile, patient };
+  return { user, profile, patient, supabase };
 }
 
 export async function getPatientNotes(patientId: string) {
-  const { profile } = await requireNoteAccess(patientId);
+  const { supabase } = await requireNoteAccess(patientId);
 
-  const notes = await sql`
-    select id, author_id, content, created_at
-    from public.patient_notes
-    where patient_id = ${patientId}
-      and organization_id = ${profile.organizationId}
-    order by created_at desc
-    limit 50
-  `;
+  const { data, error } = await supabase
+    .from("patient_notes")
+    .select("id, author_id, content, created_at")
+    .eq("patient_id", patientId)
+    .order("created_at", { ascending: false })
+    .limit(50);
 
-  const authorIds = [...new Set(notes.map((n) => n.author_id))];
-  if (authorIds.length === 0) return [];
-
-  const authors = await db
-    .select({ userId: profiles.userId })
-    .from(profiles)
-    .where(eq(profiles.userId, authorIds[0]));
+  if (error) throw error;
+  if (!data || data.length === 0) return [];
 
   const practitionerRows = await db
     .select()
@@ -72,17 +65,17 @@ export async function getPatientNotes(patientId: string) {
     practitionerRows.map((p) => [p.userId, p]),
   );
 
-  return notes.map((n) => ({
-    id: n.id,
-    content: n.content,
-    createdAt: n.created_at,
-    authorId: n.author_id,
-    authorName: practitionerByUserId[n.author_id]?.specialty ?? "Practitioner",
+  return data.map((n: Record<string, unknown>) => ({
+    id: n.id as string,
+    content: n.content as string,
+    createdAt: n.created_at as string,
+    authorId: n.author_id as string,
+    authorName: practitionerByUserId[n.author_id as string]?.specialty ?? "Practitioner",
   }));
 }
 
 export async function createPatientNote(patientId: string, formData: FormData) {
-  const { user, profile } = await requireNoteAccess(patientId);
+  const { user, profile, supabase } = await requireNoteAccess(patientId);
 
   const content = formData.get("content");
   if (typeof content !== "string" || !content.trim()) return;
@@ -90,12 +83,17 @@ export async function createPatientNote(patientId: string, formData: FormData) {
   const embedding = await embedText(content.trim());
   const vec = vectorLiteral(embedding);
 
-  await sql`
-    insert into public.patient_notes
-      (organization_id, patient_id, author_id, content, embedding)
-    values
-      (${profile.organizationId}, ${patientId}, ${user.id}, ${content.trim()}, ${vec}::vector)
-  `;
+  const { error } = await supabase
+    .from("patient_notes")
+    .insert({
+      organization_id: profile.organizationId,
+      patient_id: patientId,
+      author_id: user.id,
+      content: content.trim(),
+      embedding: vec,
+    });
+
+  if (error) throw error;
 
   revalidatePath(`/organization/patients/${patientId}`);
 }
