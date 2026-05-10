@@ -126,6 +126,7 @@ export const patients = pgTable(
     ),
     userId: uuid("user_id").unique(),
     name: text("name").notNull(),
+    email: text("email"),
     dateOfBirth: date("date_of_birth").notNull(),
     gender: text("gender").notNull(),
     createdAt: integer("created_at")
@@ -171,6 +172,7 @@ export const relatives = pgTable(
       .references(() => patients.id, { onDelete: "cascade" }),
     userId: uuid("user_id").unique(),
     name: text("name").notNull(),
+    email: text("email"),
     relationship: text("relationship").notNull(),
     createdAt: integer("created_at")
       .notNull()

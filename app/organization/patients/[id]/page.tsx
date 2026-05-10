@@ -39,14 +39,23 @@ export default async function PatientDetailPage({
         <h2 className="text-lg font-semibold">Relatives</h2>
 
         <form action={addRelative} className="mt-4 rounded border p-4">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <label className="flex flex-col gap-1">
-              <span className="text-xs font-medium text-zinc-500">Name</span>
+              <span className="text-xs font-medium text-zinc-500">Full name</span>
               <input
                 name="name"
                 type="text"
                 placeholder="Jane Doe"
                 required
+                className="rounded border px-3 py-2 text-sm"
+              />
+            </label>
+            <label className="flex flex-col gap-1">
+              <span className="text-xs font-medium text-zinc-500">Email</span>
+              <input
+                name="email"
+                type="email"
+                placeholder="relative@example.com"
                 className="rounded border px-3 py-2 text-sm"
               />
             </label>
@@ -65,15 +74,13 @@ export default async function PatientDetailPage({
                 <option value="other">Other</option>
               </select>
             </label>
-            <div className="flex items-end">
-              <button
-                type="submit"
-                className="w-full rounded bg-black px-4 py-2 text-sm text-white dark:bg-white dark:text-black"
-              >
-                Add
-              </button>
-            </div>
           </div>
+          <button
+            type="submit"
+            className="mt-4 w-full rounded bg-black px-4 py-2 text-sm text-white dark:bg-white dark:text-black sm:w-auto"
+          >
+            Add relative
+          </button>
         </form>
 
         <ul className="mt-6 flex flex-col gap-2">
@@ -82,7 +89,12 @@ export default async function PatientDetailPage({
               key={r.id}
               className="flex items-center justify-between rounded border px-4 py-3"
             >
-              <span className="font-medium">{r.name}</span>
+              <div>
+                <span className="font-medium">{r.name}</span>
+                {r.email && (
+                  <span className="ml-2 text-sm text-zinc-400">{r.email}</span>
+                )}
+              </div>
               <span className="text-sm capitalize text-zinc-400">
                 {r.relationship}
               </span>

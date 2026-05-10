@@ -27,6 +27,15 @@ export default async function PatientsPage() {
             />
           </label>
           <label className="flex flex-col gap-1">
+            <span className="text-xs font-medium text-zinc-500">Email</span>
+            <input
+              name="email"
+              type="email"
+              placeholder="patient@example.com"
+              className="rounded border px-3 py-2 text-sm"
+            />
+          </label>
+          <label className="flex flex-col gap-1">
             <span className="text-xs font-medium text-zinc-500">Date of birth</span>
             <input
               name="dateOfBirth"
@@ -45,15 +54,13 @@ export default async function PatientsPage() {
               <option value="unknown">Unknown</option>
             </select>
           </label>
-          <div className="flex items-end">
-            <button
-              type="submit"
-              className="w-full rounded bg-black px-4 py-2 text-sm text-white dark:bg-white dark:text-black"
-            >
-              Add patient
-            </button>
-          </div>
         </div>
+        <button
+          type="submit"
+          className="mt-4 w-full rounded bg-black px-4 py-2 text-sm text-white dark:bg-white dark:text-black sm:w-auto"
+        >
+          Add patient
+        </button>
       </form>
 
       <ul className="mt-8 flex flex-col gap-2">
@@ -63,7 +70,12 @@ export default async function PatientsPage() {
               href={`/organization/patients/${p.id}`}
               className="flex items-center justify-between rounded border px-4 py-3 hover:bg-zinc-50 dark:hover:bg-zinc-900"
             >
-              <span className="font-medium">{p.name}</span>
+              <div>
+                <span className="font-medium">{p.name}</span>
+                {p.email && (
+                  <span className="ml-2 text-sm text-zinc-400">{p.email}</span>
+                )}
+              </div>
               <span className="text-sm text-zinc-400">
                 {new Date(p.dateOfBirth).toLocaleDateString()} · {p.gender}
               </span>

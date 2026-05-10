@@ -125,6 +125,7 @@ export async function createPatient(formData: FormData) {
   const profile = await requireOrganizationUser();
 
   const name = formData.get("name");
+  const email = formData.get("email");
   const dateOfBirth = formData.get("dateOfBirth");
   const gender = formData.get("gender");
 
@@ -147,6 +148,7 @@ export async function createPatient(formData: FormData) {
     organizationId: profile.organizationId,
     practitionerId: practitioner?.id,
     name: name.trim(),
+    email: typeof email === "string" && email.trim() ? email.trim() : null,
     dateOfBirth: dateOfBirth.trim(),
     gender: gender.trim(),
   });
@@ -177,6 +179,7 @@ export async function createRelative(patientId: string, formData: FormData) {
   await requireOrganizationUser();
 
   const name = formData.get("name");
+  const email = formData.get("email");
   const relationship = formData.get("relationship");
 
   if (
@@ -190,6 +193,7 @@ export async function createRelative(patientId: string, formData: FormData) {
   await db.insert(relatives).values({
     patientId,
     name: name.trim(),
+    email: typeof email === "string" && email.trim() ? email.trim() : null,
     relationship: relationship.trim(),
   });
 
