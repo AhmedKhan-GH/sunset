@@ -2,7 +2,17 @@
   "permissions": {
     "allow": [
       "Bash(npx supabase *)",
-      "Bash(npm run *)"
+      "Bash(npm run *)",
+      "Bash(docker exec *)",
+      "Bash(git add *)",
+      "Bash(git reset *)",
+      "Bash(git commit -m ' *)",
+      "Bash(curl -s -X POST 'http://127.0.0.1:54321/auth/v1/token?grant_type=password' -H 'apikey: sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH' -H 'Content-Type: application/json' -d '{\"email\":\"relative@sunset.dev\",\"password\":\"admin123\"}')",
+      "Bash(kill %1)",
+      "Bash(pkill -f \"next dev\")",
+      "Bash(git -C \"/Users/user/Documents/DavisHacks 2026/sunset\" branch -a)",
+      "Bash(git -C \"/Users/user/Documents/DavisHacks 2026/sunset\" log --oneline origin/color-scheme -20)",
+      "Bash(git -C \"/Users/user/Documents/DavisHacks 2026/sunset\" show origin/color-scheme:app/globals.css)"
     ]
   }
 }

@@ -11,12 +11,19 @@ colorSchema: light
 ---
 
 <div class="absolute inset-0 overflow-hidden pointer-events-none">
-  <div class="absolute left-1/2 w-[480px] h-[480px] rounded-full" style="top: 100%; transform: translate(-50%, -55%); background: radial-gradient(circle at 32% 28%, rgba(255,255,255,0.92) 0%, rgba(255,255,255,0) 32%), radial-gradient(circle at 65% 72%, #a78bfa 0%, #f472b6 42%, #fbbf24 82%, #fde7c4 100%); box-shadow: inset -34px -50px 100px rgba(124,58,237,0.20), inset 32px 42px 100px rgba(255,255,255,0.55), 0 30px 90px rgba(244,114,182,0.18); opacity: 0.92;" />
-  <div class="absolute top-[14%] left-[7%] w-28 h-28 rounded-full opacity-80" style="background: radial-gradient(circle at 35% 30%, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0) 36%), radial-gradient(circle at 62% 68%, #f472b6 0%, #fbbf24 72%, #fde7c4 100%); box-shadow: inset -8px -12px 26px rgba(124,58,237,0.16);" />
-  <div class="absolute top-[20%] right-[10%] w-36 h-36 rounded-full opacity-72" style="background: radial-gradient(circle at 32% 30%, rgba(255,255,255,0.92) 0%, rgba(255,255,255,0) 36%), radial-gradient(circle at 65% 65%, #a78bfa 0%, #f472b6 65%, #fbbf24 100%); box-shadow: inset -10px -14px 30px rgba(124,58,237,0.18);" />
-  <div class="absolute bottom-[22%] left-[6%] w-16 h-16 rounded-full opacity-60" style="background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0) 40%), radial-gradient(circle at 65% 65%, #c4b5fd 0%, #f472b6 80%);" />
+  <div class="absolute left-1/2 w-[480px] h-[480px] rounded-full" style="top: 100%; transform: translate(-50%, -55%); background: linear-gradient(135deg, #fbbf24 0%, #f472b6 55%, #a78bfa 100%); opacity: 0.85;" />
   <div class="absolute -top-32 -right-32 w-[520px] h-[520px] rounded-full opacity-25 blur-3xl" style="background: radial-gradient(circle, #fbbf24 0%, #f472b6 50%, transparent 80%);" />
   <div class="absolute -bottom-32 -left-32 w-[420px] h-[420px] rounded-full opacity-20 blur-3xl" style="background: radial-gradient(circle, #a78bfa 0%, transparent 70%);" />
+  <svg class="absolute bottom-0 left-0 w-full" viewBox="0 0 1280 220" preserveAspectRatio="none" style="height: 22%;">
+    <defs>
+      <linearGradient id="landGrad" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0%" stop-color="#fbbf24" />
+        <stop offset="50%" stop-color="#f472b6" />
+        <stop offset="100%" stop-color="#a78bfa" />
+      </linearGradient>
+    </defs>
+    <path d="M 0,220 L 0,140 C 160,90 320,150 480,110 C 640,70 800,140 960,100 C 1120,70 1240,120 1280,95 L 1280,220 Z" fill="url(#landGrad)" />
+  </svg>
 </div>
 
 <div class="relative h-full grid grid-rows-[auto_1fr_auto] px-16 py-10 z-10">

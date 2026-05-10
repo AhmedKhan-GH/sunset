@@ -11,7 +11,9 @@
     "test:run": "vitest run",
     "db:migrate": "drizzle-kit migrate",
     "db:generate": "drizzle-kit generate",
-    "db:seed": "tsx lib/db/seed.ts"
+    "db:seed": "tsx lib/db/seed.ts",
+    "slides": "slidev docs/slides/intro.md --open",
+    "slides:export": "slidev export docs/slides/intro.md --output docs/slides/intro.pdf"
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.3",
@@ -23,6 +25,8 @@
     "react-dom": "19.2.4"
   },
   "devDependencies": {
+    "@slidev/cli": "^52.15.1",
+    "@slidev/theme-default": "^0.25.0",
     "@tailwindcss/postcss": "^4",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/react": "^16.3.2",
@@ -35,6 +39,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.6",
     "jsdom": "^29.1.1",
+    "playwright-chromium": "^1.59.1",
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^4.1.5"
