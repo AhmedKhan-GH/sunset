@@ -25,6 +25,16 @@ export default async function AdminLivePage() {
   }
 
   const { data: initialOrgs } = await supabase.from("organizations").select("*");
+  const { data: initialPings } = await supabase
+    .from("cron_pings")
+    .select("*")
+    .order("fired_at", { ascending: false })
+    .limit(20);
 
-  return <LiveFeed initialOrgs={initialOrgs ?? []} />;
+  return (
+    <LiveFeed
+      initialOrgs={initialOrgs ?? []}
+      initialPings={initialPings ?? []}
+    />
+  );
 }

@@ -17,9 +17,22 @@ type Event = {
   name: string;
 };
 
-export function LiveFeed({ initialOrgs }: { initialOrgs: Org[] }) {
+type Ping = {
+  id: string;
+  message: string;
+  fired_at: string;
+};
+
+export function LiveFeed({
+  initialOrgs,
+  initialPings,
+}: {
+  initialOrgs: Org[];
+  initialPings: Ping[];
+}) {
   const [orgs, setOrgs] = useState<Org[]>(initialOrgs);
   const [events, setEvents] = useState<Event[]>([]);
+  const [pings, setPings] = useState<Ping[]>(initialPings);
   const [status, setStatus] = useState<string>("connecting…");
 
   useEffect(() => {
@@ -47,6 +60,14 @@ export function LiveFeed({ initialOrgs }: { initialOrgs: Org[] }) {
 
       channel = supabase
         .channel("admin-live-orgs")
+        .on(
+          "postgres_changes",
+          { event: "INSERT", schema: "public", table: "cron_pings" },
+          (payload) => {
+            const p = payload.new as Ping;
+            setPings((prev) => [p, ...prev].slice(0, 20));
+          },
+        )
         .on(
           "postgres_changes",
           { event: "*", schema: "public", table: "organizations" },
@@ -140,6 +161,33 @@ export function LiveFeed({ initialOrgs }: { initialOrgs: Org[] }) {
                 {e.type}
               </strong>{" "}
               {e.name}
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <h2 className="mt-8 text-lg font-medium">pg_cron pings ({pings.length})</h2>
+      <p className="text-xs text-zinc-400">
+        Scheduled job <code>demo-ping</code> fires daily at 00:40 UTC (5:40 PM PDT).
+      </p>
+      {pings.length === 0 ? (
+        <p className="mt-3 text-sm text-zinc-400">
+          No pings yet. Wait for the scheduled time.
+        </p>
+      ) : (
+        <ul className="mt-3 space-y-1 font-mono text-xs">
+          {pings.map((p) => (
+            <li
+              key={p.id}
+              className="rounded border border-purple-300 bg-purple-50 px-3 py-2 dark:border-purple-700 dark:bg-purple-950"
+            >
+              <span className="text-zinc-400">
+                [{new Date(p.fired_at).toLocaleTimeString()}]
+              </span>{" "}
+              <strong className="text-purple-700 dark:text-purple-300">
+                PING
+              </strong>{" "}
+              {p.message}
             </li>
           ))}
         </ul>
