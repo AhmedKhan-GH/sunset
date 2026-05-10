@@ -72,14 +72,8 @@ export function ChatPanel() {
   return (
     <div className="flex h-full">
       <div className="flex w-48 flex-col border-r">
-        <div className="flex items-center justify-between border-b px-3 py-2">
+        <div className="border-b px-3 py-2">
           <span className="text-xs font-medium text-zinc-500">History</span>
-          <button
-            onClick={clearChat}
-            className="text-xs text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
-          >
-            Clear
-          </button>
         </div>
         <div className="flex-1 overflow-y-auto">
           {conversationList.map((c) => (
@@ -109,6 +103,7 @@ export function ChatPanel() {
           initialMessages={initialMessages}
           onConversationCreated={handleConversationCreated}
           onMessageSent={loadConversations}
+          onNewChat={clearChat}
         />
       </div>
     </div>
@@ -120,11 +115,13 @@ function ChatMessages({
   initialMessages,
   onConversationCreated,
   onMessageSent,
+  onNewChat,
 }: {
   conversationId: string | null;
   initialMessages: { id: string; role: "user" | "assistant"; parts: { type: "text"; text: string }[] }[];
   onConversationCreated: (id: string, title: string | null) => void;
   onMessageSent: () => void;
+  onNewChat: () => void;
 }) {
   const [input, setInput] = useState("");
   const convIdRef = useRef(conversationId);
@@ -228,7 +225,17 @@ function ChatMessages({
         )}
       </div>
 
-      <form onSubmit={handleSubmit} className="border-t p-4">
+      {messages.length > 0 && (
+        <div className="border-t px-4 pt-2">
+          <button
+            onClick={onNewChat}
+            className="text-xs text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200"
+          >
+            New chat
+          </button>
+        </div>
+      )}
+      <form onSubmit={handleSubmit} className={`${messages.length > 0 ? "" : "border-t"} p-4`}>
         <div className="flex gap-2">
           <input
             value={input}
