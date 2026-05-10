@@ -88,6 +88,15 @@ export default async function PatientDetailPage({
         initialNotes={notes}
         addNoteAction={addNote}
       />
+
+      <div className="mt-4">
+        <Link
+          href={`/organization/notes?patient=${id}`}
+          className="text-sm text-zinc-400 hover:underline"
+        >
+          View in full notes search &rarr;
+        </Link>
+      </div>
     </div>
   );
 }
