@@ -58,17 +58,40 @@ Three things worth knowing about this shape:
 2. **Server Action, not Route Handler.** The clinician's "type and see results" pattern doesn't need streaming or external callers, so a Server Action is shorter and gives us cookie-based auth automatically.
 3. **postgres-js direct, not Drizzle.** We need a `vector` literal cast (`'[v1,v2,...]'::vector`), and Drizzle's typed query builder doesn't model that cleanly. Direct SQL is simpler.
 
-## 3.5 Two search modes — most & least similar
+## 3.5 Search field + filter-out field
 
-The page has two independent search fields, both with their own 1-second debounce:
+The page has two fields that work together:
 
-- **Most similar** (default) — `ORDER BY embedding <=> qv ASC`. Returns the top 10 nearest entries. This is the everyday clinician query: "show me everything related to this concept."
-- **Least similar** — `ORDER BY embedding <=> qv DESC`. Returns the top 10 *farthest* entries. Useful for:
-  - Contrast queries: "show me what this patient has been through that *isn't* about pain"
-  - Sanity-checking semantic boundaries — see what the embedding considers totally unrelated to the query
-  - Surfacing recordings unlike a particular concept (e.g., farthest from "anxiety" might surface medical/clinical-shorthand recordings for triage)
+- **Search** (required) — the main query. "What am I looking for?"
+- **Filter out** (optional) — deboosts results similar to this. "What should NOT be in the results?"
 
-Both modes route through the same `searchNotes(query, mode)` Server Action — only the SQL `ORDER BY` direction changes. No re-embedding, no extra index, instant.
+When the filter is empty, the Server Action behaves exactly like a most-similar search (`ORDER BY embedding <=> qv ASC`).
+
+When the filter is set, both queries get embedded and rows are scored as:
+
+```
+score = similarity(row, query) − similarity(row, filterOut)
+```
+
+Rows that match the query but are unlike the filter rise to the top. Rows that match both are demoted. Rows that only match the filter never appear (they would have negative scores).
+
+In SQL:
+
+```sql
+SELECT id, ...,
+       (1 - (embedding <=> $pos))::float AS similarity,
+       (1 - (embedding <=> $neg))::float AS filtered_similarity
+  FROM symptom_demo
+ ORDER BY (embedding <=> $neg) - (embedding <=> $pos) DESC
+ LIMIT 10;
+```
+
+Use cases:
+- "Search: pain  /  Filter out: morning" — pain that isn't from morning routines
+- "Search: breathing  /  Filter out: lying flat" — breathing issues not tied to position
+- "Search: anxiety  /  Filter out: family visit" — agitation not triggered by visitor presence
+
+The combined query trades the HNSW index for a sequential scan (we sort by a per-row computation involving both vectors). At 1001 rows that's still a few ms; at 100k+ rows we'd switch to two-stage retrieval (top-N by HNSW, then re-rank with the combined score).
 
 ## 4. The live-search pattern (1-second debounce)
 

@@ -10,10 +10,9 @@ export type NoteResult = {
   id: number;
   category: string;
   symptom_text: string;
-  similarity: number;
+  similarity: number;          // similarity to the main (positive) query
+  filtered_similarity?: number; // similarity to the filter-out query (only when filter is set)
 };
-
-export type SearchMode = "most_similar" | "least_similar";
 
 async function requireClinician() {
   const supabase = await createClient();
@@ -33,40 +32,52 @@ async function requireClinician() {
   }
 }
 
+/**
+ * Semantic search with optional negative filter.
+ *
+ * - When `filterOut` is empty: returns the 10 rows most similar to `query`.
+ * - When `filterOut` is set: ranks each row by (similarity to query) minus
+ *   (similarity to filterOut), so rows like the query but unlike the filter
+ *   rise to the top. Rows similar to BOTH are deboosted.
+ */
 export async function searchNotes(
   query: string,
-  mode: SearchMode = "most_similar",
+  filterOut?: string,
 ): Promise<NoteResult[]> {
   await requireClinician();
 
-  const trimmed = query.trim();
-  if (!trimmed) return [];
+  const q = query.trim();
+  if (!q) return [];
 
-  const vec = await embedText(trimmed);
-  const lit = vectorLiteral(vec);
+  const posVec = await embedText(q);
+  const posLit = vectorLiteral(posVec);
 
-  // <=> is cosine distance: 0 = identical, 2 = opposite.
-  // ASC = most similar first; DESC = least similar (farthest) first.
-  const rows =
-    mode === "least_similar"
-      ? await sql<NoteResult[]>`
-          select id,
-                 category,
-                 symptom_text,
-                 (1 - (embedding <=> ${lit}::vector))::float as similarity
-            from public.symptom_demo
-           order by embedding <=> ${lit}::vector desc
-           limit 10
-        `
-      : await sql<NoteResult[]>`
-          select id,
-                 category,
-                 symptom_text,
-                 (1 - (embedding <=> ${lit}::vector))::float as similarity
-            from public.symptom_demo
-           order by embedding <=> ${lit}::vector asc
-           limit 10
-        `;
+  const filter = (filterOut ?? "").trim();
+  if (!filter) {
+    return sql<NoteResult[]>`
+      select id,
+             category,
+             symptom_text,
+             (1 - (embedding <=> ${posLit}::vector))::float as similarity
+        from public.symptom_demo
+       order by embedding <=> ${posLit}::vector asc
+       limit 10
+    `;
+  }
 
-  return rows;
+  const negVec = await embedText(filter);
+  const negLit = vectorLiteral(negVec);
+
+  // Score = pos_similarity − neg_similarity; we sort DESC.
+  // Equivalent SQL using distance form: ORDER BY (neg_distance − pos_distance) DESC.
+  return sql<NoteResult[]>`
+    select id,
+           category,
+           symptom_text,
+           (1 - (embedding <=> ${posLit}::vector))::float as similarity,
+           (1 - (embedding <=> ${negLit}::vector))::float as filtered_similarity
+      from public.symptom_demo
+     order by (embedding <=> ${negLit}::vector) - (embedding <=> ${posLit}::vector) desc
+     limit 10
+  `;
 }
