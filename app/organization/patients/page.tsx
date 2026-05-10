@@ -8,45 +8,49 @@ export default async function PatientsPage() {
   ]);
 
   return (
-    <div className="mx-auto w-full max-w-2xl p-8">
+    <div className="mx-auto w-full max-w-3xl p-8">
       <h1 className="text-2xl font-semibold">Patients</h1>
       {organization && (
-        <p className="mt-1 text-sm text-zinc-500">{organization.name}</p>
+        <p className="mt-1 text-sm text-muted-foreground">{organization.name}</p>
       )}
 
-      <form action={createPatient} className="mt-6 rounded border p-4">
+      <form action={createPatient} className="mt-6 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <label className="flex flex-col gap-1">
-            <span className="text-xs font-medium text-zinc-500">Full name</span>
+            <span className="text-xs font-medium text-muted-foreground">Full name</span>
             <input
               name="name"
               type="text"
               placeholder="Jane Doe"
               required
-              className="rounded border px-3 py-2 text-sm"
+              className="rounded-lg border border-border bg-surface px-3 py-2 text-sm focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand-soft"
             />
           </label>
           <label className="flex flex-col gap-1">
-            <span className="text-xs font-medium text-zinc-500">Email</span>
+            <span className="text-xs font-medium text-muted-foreground">Email</span>
             <input
               name="email"
               type="email"
               placeholder="patient@example.com"
-              className="rounded border px-3 py-2 text-sm"
+              className="rounded-lg border border-border bg-surface px-3 py-2 text-sm focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand-soft"
             />
           </label>
           <label className="flex flex-col gap-1">
-            <span className="text-xs font-medium text-zinc-500">Date of birth</span>
+            <span className="text-xs font-medium text-muted-foreground">Date of birth</span>
             <input
               name="dateOfBirth"
               type="date"
               required
-              className="rounded border px-3 py-2 text-sm"
+              className="rounded-lg border border-border bg-surface px-3 py-2 text-sm focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand-soft"
             />
           </label>
           <label className="flex flex-col gap-1">
-            <span className="text-xs font-medium text-zinc-500">Gender</span>
-            <select name="gender" required className="rounded border px-3 py-2 text-sm">
+            <span className="text-xs font-medium text-muted-foreground">Gender</span>
+            <select
+              name="gender"
+              required
+              className="rounded-lg border border-border bg-surface px-3 py-2 text-sm focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand-soft"
+            >
               <option value="">Select...</option>
               <option value="male">Male</option>
               <option value="female">Female</option>
@@ -58,7 +62,7 @@ export default async function PatientsPage() {
         <div className="mt-4 flex justify-end">
           <button
             type="submit"
-            className="rounded bg-black px-4 py-2 text-sm text-white dark:bg-white dark:text-black"
+            className="rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white transition hover:brightness-110"
           >
             Add patient
           </button>
@@ -70,22 +74,22 @@ export default async function PatientsPage() {
           <li key={p.id}>
             <Link
               href={`/organization/patients/${p.id}`}
-              className="flex items-center justify-between rounded border px-4 py-3 hover:bg-zinc-50 dark:hover:bg-zinc-900"
+              className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-4 py-3 shadow-sm transition hover:bg-slate-50"
             >
               <div>
                 <span className="font-medium">{p.name}</span>
                 {p.email && (
-                  <span className="ml-2 text-sm text-zinc-400">{p.email}</span>
+                  <span className="ml-2 text-sm text-muted-foreground">{p.email}</span>
                 )}
               </div>
-              <span className="text-sm text-zinc-400">
+              <span className="text-sm text-muted-foreground">
                 {new Date(p.dateOfBirth).toLocaleDateString()} · {p.gender}
               </span>
             </Link>
           </li>
         ))}
         {patients.length === 0 && (
-          <li className="text-sm text-zinc-400">No patients yet.</li>
+          <li className="text-sm text-muted-foreground">No patients yet.</li>
         )}
       </ul>
     </div>

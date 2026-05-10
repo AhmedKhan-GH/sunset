@@ -16,7 +16,7 @@ export default async function OrganizationNotesPage({
   return (
     <div className="mx-auto w-full max-w-3xl p-8">
       <h1 className="text-2xl font-semibold">Notes</h1>
-      <p className="mt-1 text-sm text-zinc-500">
+      <p className="mt-1 text-sm text-muted-foreground">
         Semantic search across all patient notes in your organization.
       </p>
       <div className="mt-6">
