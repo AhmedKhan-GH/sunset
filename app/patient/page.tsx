@@ -1,7 +1,11 @@
-import { getMyPatient, getMyRelatives, createRelative } from "./actions";
+import { getMyPatient, getMyRelatives, getCareTeam, createRelative } from "./actions";
 
 export default async function PatientPage() {
-  const [patient, relatives] = await Promise.all([getMyPatient(), getMyRelatives()]);
+  const [patient, relatives, careTeam] = await Promise.all([
+    getMyPatient(),
+    getMyRelatives(),
+    getCareTeam(),
+  ]);
 
   return (
     <div className="mx-auto w-full max-w-2xl p-8">
@@ -10,6 +14,16 @@ export default async function PatientPage() {
         <span>DOB: {new Date(patient.dateOfBirth).toLocaleDateString()}</span>
         <span className="capitalize">{patient.gender}</span>
       </div>
+
+      <section className="mt-10">
+        <h2 className="text-lg font-semibold">Care team</h2>
+        <dl className="mt-4 grid grid-cols-[8rem_1fr] gap-y-2 text-sm">
+          <dt className="text-zinc-500">Practitioner</dt>
+          <dd>{careTeam.practitionerEmail ?? <span className="text-zinc-400">Unassigned</span>}</dd>
+          <dt className="text-zinc-500">Organization</dt>
+          <dd>{careTeam.organization?.name ?? <span className="text-zinc-400">—</span>}</dd>
+        </dl>
+      </section>
 
       <section className="mt-10">
         <h2 className="text-lg font-semibold">My relatives</h2>

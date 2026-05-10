@@ -1,9 +1,10 @@
-import { getMyRelativeRow, getRelatedPatient } from "./actions";
+import { getMyRelativeRow, getRelatedPatient, getCareTeam } from "./actions";
 
 export default async function RelativePage() {
-  const [relative, patient] = await Promise.all([
+  const [relative, patient, careTeam] = await Promise.all([
     getMyRelativeRow(),
     getRelatedPatient(),
+    getCareTeam(),
   ]);
 
   return (
@@ -20,6 +21,16 @@ export default async function RelativePage() {
           <span>DOB: {new Date(patient.dateOfBirth).toLocaleDateString()}</span>
           <span className="capitalize">{patient.gender}</span>
         </div>
+      </section>
+
+      <section className="mt-10">
+        <h2 className="text-lg font-semibold">Care team</h2>
+        <dl className="mt-4 grid grid-cols-[8rem_1fr] gap-y-2 text-sm">
+          <dt className="text-zinc-500">Practitioner</dt>
+          <dd>{careTeam.practitionerEmail ?? <span className="text-zinc-400">Unassigned</span>}</dd>
+          <dt className="text-zinc-500">Organization</dt>
+          <dd>{careTeam.organization?.name ?? <span className="text-zinc-400">—</span>}</dd>
+        </dl>
       </section>
     </div>
   );

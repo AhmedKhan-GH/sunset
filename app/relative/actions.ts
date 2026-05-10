@@ -1,8 +1,9 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { db } from "@/lib/db";
-import { patients, relatives } from "@/lib/db/schema";
+import { organizations, patients, relatives } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 
@@ -31,4 +32,22 @@ export async function getRelatedPatient() {
     .from(patients)
     .where(eq(patients.id, relative.patientId));
   return patient;
+}
+
+export async function getCareTeam() {
+  const patient = await getRelatedPatient();
+
+  const [organization] = await db
+    .select()
+    .from(organizations)
+    .where(eq(organizations.id, patient.orgId));
+
+  let practitionerEmail: string | null = null;
+  if (patient.practitionerId) {
+    const admin = createAdminClient();
+    const { data } = await admin.auth.admin.getUserById(patient.practitionerId);
+    practitionerEmail = data.user?.email ?? null;
+  }
+
+  return { organization, practitionerEmail };
 }
