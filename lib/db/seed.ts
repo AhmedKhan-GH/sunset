@@ -1,6 +1,7 @@
 import dotenv from "dotenv";
 import postgres from "postgres";
 import { drizzle } from "drizzle-orm/postgres-js";
+import { migrate } from "drizzle-orm/postgres-js/migrator";
 import { profiles, organizations, patients, relatives } from "./schema";
 import { createClient } from "@supabase/supabase-js";
 
@@ -43,8 +44,12 @@ async function getOrCreateAuthUser(email: string, password: string): Promise<str
 }
 
 async function seed() {
+  console.log("\n[0/6] running migrations");
+  await migrate(db, { migrationsFolder: "./drizzle" });
+  console.log("  migrations applied");
+
   // 1. Platform admin
-  console.log("\n[1/5] platform admin");
+  console.log("\n[1/6] platform admin");
   const platformAdminId = await getOrCreateAuthUser("admin@sunset.dev", "admin123");
   await db
     .insert(profiles)
@@ -52,7 +57,7 @@ async function seed() {
     .onConflictDoNothing();
 
   // 2. Organization
-  console.log("\n[2/5] organization");
+  console.log("\n[2/6] organization");
   let [org] = await db
     .insert(organizations)
     .values({ name: "Sunrise Hospice" })
@@ -67,7 +72,7 @@ async function seed() {
   }
 
   // 3. Org admin
-  console.log("\n[3/5] org admin");
+  console.log("\n[3/6] org admin");
   const orgAdminId = await getOrCreateAuthUser("org-admin@sunset.dev", "admin123");
   await db
     .insert(profiles)
@@ -75,7 +80,7 @@ async function seed() {
     .onConflictDoNothing();
 
   // 4. Practitioner
-  console.log("\n[4/5] practitioner");
+  console.log("\n[4/6] practitioner");
   const practitionerId = await getOrCreateAuthUser("practitioner@sunset.dev", "admin123");
   await db
     .insert(profiles)
