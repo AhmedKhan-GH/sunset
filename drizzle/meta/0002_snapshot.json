@@ -1,0 +1,383 @@
+{
+  "id": "8df467ce-2063-4153-ab36-103ec9562a38",
+  "prevId": "f72db6fa-f8ad-41b9-9241-530f5e1c8fe3",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.organizations": {
+      "name": "organizations",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "extract(epoch from now())::integer"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "extract(epoch from now())::integer"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "platform admin can manage orgs": {
+          "name": "platform admin can manage orgs",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "authenticated"
+          ],
+          "using": "(SELECT role FROM profiles WHERE user_id = auth.uid()) = 'platform_admin'",
+          "withCheck": "(SELECT role FROM profiles WHERE user_id = auth.uid()) = 'platform_admin'"
+        },
+        "org members can read own org": {
+          "name": "org members can read own org",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "authenticated"
+          ],
+          "using": "\"organizations\".\"id\" = (SELECT org_id FROM profiles WHERE user_id = auth.uid())"
+        }
+      },
+      "checkConstraints": {},
+      "isRLSEnabled": true
+    },
+    "public.patients": {
+      "name": "patients",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "org_id": {
+          "name": "org_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "practitioner_id": {
+          "name": "practitioner_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "date_of_birth": {
+          "name": "date_of_birth",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "gender": {
+          "name": "gender",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "extract(epoch from now())::integer"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "extract(epoch from now())::integer"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "patients_org_id_organizations_id_fk": {
+          "name": "patients_org_id_organizations_id_fk",
+          "tableFrom": "patients",
+          "tableTo": "organizations",
+          "columnsFrom": [
+            "org_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "patients_practitioner_id_profiles_user_id_fk": {
+          "name": "patients_practitioner_id_profiles_user_id_fk",
+          "tableFrom": "patients",
+          "tableTo": "profiles",
+          "columnsFrom": [
+            "practitioner_id"
+          ],
+          "columnsTo": [
+            "user_id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "patients_user_id_unique": {
+          "name": "patients_user_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "user_id"
+          ]
+        }
+      },
+      "policies": {
+        "platform admin can manage patients": {
+          "name": "platform admin can manage patients",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "authenticated"
+          ],
+          "using": "(SELECT role FROM profiles WHERE user_id = auth.uid()) = 'platform_admin'",
+          "withCheck": "(SELECT role FROM profiles WHERE user_id = auth.uid()) = 'platform_admin'"
+        },
+        "org admin can manage org patients": {
+          "name": "org admin can manage org patients",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "authenticated"
+          ],
+          "using": "(SELECT role FROM profiles WHERE user_id = auth.uid()) = 'org_admin' AND \"patients\".\"org_id\" = (SELECT org_id FROM profiles WHERE user_id = auth.uid())",
+          "withCheck": "(SELECT role FROM profiles WHERE user_id = auth.uid()) = 'org_admin' AND \"patients\".\"org_id\" = (SELECT org_id FROM profiles WHERE user_id = auth.uid())"
+        },
+        "practitioner can manage org patients": {
+          "name": "practitioner can manage org patients",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "authenticated"
+          ],
+          "using": "(SELECT role FROM profiles WHERE user_id = auth.uid()) = 'practitioner' AND \"patients\".\"org_id\" = (SELECT org_id FROM profiles WHERE user_id = auth.uid())",
+          "withCheck": "(SELECT role FROM profiles WHERE user_id = auth.uid()) = 'practitioner' AND \"patients\".\"org_id\" = (SELECT org_id FROM profiles WHERE user_id = auth.uid())"
+        },
+        "patient can read own record": {
+          "name": "patient can read own record",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "authenticated"
+          ],
+          "using": "\"patients\".\"user_id\" = auth.uid()"
+        }
+      },
+      "checkConstraints": {},
+      "isRLSEnabled": true
+    },
+    "public.profiles": {
+      "name": "profiles",
+      "schema": "",
+      "columns": {
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "role": {
+          "name": "role",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "org_id": {
+          "name": "org_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "extract(epoch from now())::integer"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "extract(epoch from now())::integer"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "profiles_org_id_organizations_id_fk": {
+          "name": "profiles_org_id_organizations_id_fk",
+          "tableFrom": "profiles",
+          "tableTo": "organizations",
+          "columnsFrom": [
+            "org_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "users can read own profile": {
+          "name": "users can read own profile",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "authenticated"
+          ],
+          "using": "\"profiles\".\"user_id\" = auth.uid()"
+        }
+      },
+      "checkConstraints": {},
+      "isRLSEnabled": true
+    },
+    "public.relatives": {
+      "name": "relatives",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "patient_id": {
+          "name": "patient_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "relationship": {
+          "name": "relationship",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "extract(epoch from now())::integer"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "relatives_patient_id_patients_id_fk": {
+          "name": "relatives_patient_id_patients_id_fk",
+          "tableFrom": "relatives",
+          "tableTo": "patients",
+          "columnsFrom": [
+            "patient_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "platform admin can manage relatives": {
+          "name": "platform admin can manage relatives",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "authenticated"
+          ],
+          "using": "(SELECT role FROM profiles WHERE user_id = auth.uid()) = 'platform_admin'",
+          "withCheck": "(SELECT role FROM profiles WHERE user_id = auth.uid()) = 'platform_admin'"
+        },
+        "patient can manage own relatives": {
+          "name": "patient can manage own relatives",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "authenticated"
+          ],
+          "using": "EXISTS (\n        SELECT 1 FROM patients p\n        WHERE p.id = \"relatives\".\"patient_id\" AND p.user_id = auth.uid()\n      )",
+          "withCheck": "EXISTS (\n        SELECT 1 FROM patients p\n        WHERE p.id = \"relatives\".\"patient_id\" AND p.user_id = auth.uid()\n      )"
+        },
+        "org members can manage relatives of org patients": {
+          "name": "org members can manage relatives of org patients",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "authenticated"
+          ],
+          "using": "\n        (SELECT role FROM profiles WHERE user_id = auth.uid()) IN ('org_admin', 'practitioner')\n        AND EXISTS (\n          SELECT 1 FROM patients p\n          WHERE p.id = \"relatives\".\"patient_id\"\n          AND p.org_id = (SELECT org_id FROM profiles WHERE user_id = auth.uid())\n        )\n      ",
+          "withCheck": "\n        (SELECT role FROM profiles WHERE user_id = auth.uid()) IN ('org_admin', 'practitioner')\n        AND EXISTS (\n          SELECT 1 FROM patients p\n          WHERE p.id = \"relatives\".\"patient_id\"\n          AND p.org_id = (SELECT org_id FROM profiles WHERE user_id = auth.uid())\n        )\n      "
+        }
+      },
+      "checkConstraints": {},
+      "isRLSEnabled": true
+    }
+  },
+  "enums": {},
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

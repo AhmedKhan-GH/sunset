@@ -52,18 +52,6 @@ export const profiles = pgTable(
       to: authenticatedRole,
       using: sql`${table.userId} = auth.uid()`,
     }),
-    pgPolicy("platform admin can manage profiles", {
-      for: "all",
-      to: authenticatedRole,
-      using: isPlatformAdmin,
-      withCheck: isPlatformAdmin,
-    }),
-    pgPolicy("org admin can manage profiles in own org", {
-      for: "all",
-      to: authenticatedRole,
-      using: sql`${callerRole} = 'org_admin' AND ${table.orgId} = ${callerOrgId}`,
-      withCheck: sql`${callerRole} = 'org_admin' AND ${table.orgId} = ${callerOrgId}`,
-    }),
   ],
 ).enableRLS();
 
@@ -112,6 +100,14 @@ export const patients = pgTable(
       to: authenticatedRole,
       using: sql`${table.userId} = auth.uid()`,
     }),
+    pgPolicy("relative can read related patient", {
+      for: "select",
+      to: authenticatedRole,
+      using: sql`EXISTS (
+        SELECT 1 FROM relatives r
+        WHERE r.patient_id = ${table.id} AND r.user_id = auth.uid()
+      )`,
+    }),
   ],
 ).enableRLS();
 
@@ -122,6 +118,7 @@ export const relatives = pgTable(
     patientId: uuid("patient_id")
       .notNull()
       .references(() => patients.id, { onDelete: "cascade" }),
+    userId: uuid("user_id").unique(), // auth user for relative portal login
     name: text("name").notNull(),
     relationship: text("relationship").notNull(), // spouse | child | parent | sibling | other
     createdAt: integer("created_at")
@@ -146,6 +143,11 @@ export const relatives = pgTable(
         SELECT 1 FROM patients p
         WHERE p.id = ${table.patientId} AND p.user_id = auth.uid()
       )`,
+    }),
+    pgPolicy("relative can read own record", {
+      for: "select",
+      to: authenticatedRole,
+      using: sql`${table.userId} = auth.uid()`,
     }),
     pgPolicy("org members can manage relatives of org patients", {
       for: "all",
