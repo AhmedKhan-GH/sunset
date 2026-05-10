@@ -101,6 +101,7 @@ export async function createPatientNote(patientId: string, formData: FormData) {
 export async function searchPatientNotes(
   patientId: string,
   query: string,
+  filterOut?: string,
 ) {
   const { profile } = await requireNoteAccess(patientId);
 
@@ -108,6 +109,32 @@ export async function searchPatientNotes(
 
   const embedding = await embedText(query.trim());
   const vec = vectorLiteral(embedding);
+
+  if (filterOut?.trim()) {
+    const negEmbedding = await embedText(filterOut.trim());
+    const negVec = vectorLiteral(negEmbedding);
+
+    const results = await sql`
+      select
+        id, content, created_at,
+        (1 - (embedding <=> ${vec}::vector))::float as similarity,
+        (1 - (embedding <=> ${negVec}::vector))::float as filtered_similarity
+      from public.patient_notes
+      where patient_id = ${patientId}
+        and organization_id = ${profile.organizationId}
+        and embedding is not null
+      order by (embedding <=> ${negVec}::vector) - (embedding <=> ${vec}::vector) desc
+      limit 10
+    `;
+
+    return results.map((r) => ({
+      id: r.id,
+      content: r.content,
+      createdAt: r.created_at,
+      similarity: Number(r.similarity),
+      filteredSimilarity: Number(r.filtered_similarity),
+    }));
+  }
 
   const results = await sql`
     select
@@ -126,5 +153,32 @@ export async function searchPatientNotes(
     content: r.content,
     createdAt: r.created_at,
     similarity: Number(r.similarity),
+  }));
+}
+
+export async function keywordSearchPatientNotes(
+  patientId: string,
+  keyword: string,
+) {
+  const { profile } = await requireNoteAccess(patientId);
+
+  if (!keyword.trim()) return [];
+
+  const pattern = `%${keyword.trim()}%`;
+
+  const results = await sql`
+    select id, content, created_at
+    from public.patient_notes
+    where patient_id = ${patientId}
+      and organization_id = ${profile.organizationId}
+      and content ilike ${pattern}
+    order by created_at desc
+    limit 10
+  `;
+
+  return results.map((r) => ({
+    id: r.id,
+    content: r.content,
+    createdAt: r.created_at,
   }));
 }

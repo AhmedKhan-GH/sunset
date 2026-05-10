@@ -78,13 +78,39 @@ export async function addNoteForLinkedPatient(formData: FormData) {
   revalidatePath("/relative/notes");
 }
 
-export async function searchLinkedPatientNotes(query: string) {
+export async function searchLinkedPatientNotes(query: string, filterOut?: string) {
   const { patient } = await requireRelative();
 
   if (!query.trim()) return [];
 
   const embedding = await embedText(query.trim());
   const vec = vectorLiteral(embedding);
+
+  if (filterOut?.trim()) {
+    const negEmbedding = await embedText(filterOut.trim());
+    const negVec = vectorLiteral(negEmbedding);
+
+    const results = await sql`
+      select
+        id, content, created_at,
+        (1 - (embedding <=> ${vec}::vector))::float as similarity,
+        (1 - (embedding <=> ${negVec}::vector))::float as filtered_similarity
+      from public.patient_notes
+      where patient_id = ${patient.id}
+        and embedding is not null
+      order by (embedding <=> ${negVec}::vector) - (embedding <=> ${vec}::vector) desc
+      limit 10
+    `;
+
+    return results.map((r) => ({
+      id: r.id,
+      content: r.content,
+      createdAt: r.created_at,
+      isOwnNote: false,
+      similarity: Number(r.similarity),
+      filteredSimilarity: Number(r.filtered_similarity),
+    }));
+  }
 
   const results = await sql`
     select
@@ -103,5 +129,29 @@ export async function searchLinkedPatientNotes(query: string) {
     createdAt: r.created_at,
     isOwnNote: false,
     similarity: Number(r.similarity),
+  }));
+}
+
+export async function keywordSearchLinkedPatientNotes(keyword: string) {
+  const { patient } = await requireRelative();
+
+  if (!keyword.trim()) return [];
+
+  const pattern = `%${keyword.trim()}%`;
+
+  const results = await sql`
+    select id, content, created_at
+    from public.patient_notes
+    where patient_id = ${patient.id}
+      and content ilike ${pattern}
+    order by created_at desc
+    limit 10
+  `;
+
+  return results.map((r) => ({
+    id: r.id,
+    content: r.content,
+    createdAt: r.created_at,
+    isOwnNote: false,
   }));
 }

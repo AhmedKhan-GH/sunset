@@ -67,13 +67,39 @@ export async function addMyNote(formData: FormData) {
   revalidatePath("/patient/notes");
 }
 
-export async function searchMyNotes(query: string) {
+export async function searchMyNotes(query: string, filterOut?: string) {
   const { patient } = await requirePatient();
 
   if (!query.trim()) return [];
 
   const embedding = await embedText(query.trim());
   const vec = vectorLiteral(embedding);
+
+  if (filterOut?.trim()) {
+    const negEmbedding = await embedText(filterOut.trim());
+    const negVec = vectorLiteral(negEmbedding);
+
+    const results = await sql`
+      select
+        id, content, created_at, author_id,
+        (1 - (embedding <=> ${vec}::vector))::float as similarity,
+        (1 - (embedding <=> ${negVec}::vector))::float as filtered_similarity
+      from public.patient_notes
+      where patient_id = ${patient.id}
+        and embedding is not null
+      order by (embedding <=> ${negVec}::vector) - (embedding <=> ${vec}::vector) desc
+      limit 10
+    `;
+
+    return results.map((r) => ({
+      id: r.id,
+      content: r.content,
+      createdAt: r.created_at,
+      isOwnNote: r.author_id === patient.userId,
+      similarity: Number(r.similarity),
+      filteredSimilarity: Number(r.filtered_similarity),
+    }));
+  }
 
   const results = await sql`
     select
@@ -92,5 +118,29 @@ export async function searchMyNotes(query: string) {
     createdAt: r.created_at,
     isOwnNote: r.author_id === patient.userId,
     similarity: Number(r.similarity),
+  }));
+}
+
+export async function keywordSearchMyNotes(keyword: string) {
+  const { patient } = await requirePatient();
+
+  if (!keyword.trim()) return [];
+
+  const pattern = `%${keyword.trim()}%`;
+
+  const results = await sql`
+    select id, content, created_at, author_id
+    from public.patient_notes
+    where patient_id = ${patient.id}
+      and content ilike ${pattern}
+    order by created_at desc
+    limit 10
+  `;
+
+  return results.map((r) => ({
+    id: r.id,
+    content: r.content,
+    createdAt: r.created_at,
+    isOwnNote: r.author_id === patient.userId,
   }));
 }

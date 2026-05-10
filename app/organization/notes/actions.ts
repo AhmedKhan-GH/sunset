@@ -55,7 +55,11 @@ export async function getOrganizationNotes(patientId?: string) {
   }));
 }
 
-export async function searchOrganizationNotes(query: string, patientId?: string) {
+export async function searchOrganizationNotes(
+  query: string,
+  patientId?: string,
+  filterOut?: string,
+) {
   const { profile } = await requireOrganizationMember();
 
   if (!query.trim()) return [];
@@ -63,32 +67,53 @@ export async function searchOrganizationNotes(query: string, patientId?: string)
   const embedding = await embedText(query.trim());
   const vec = vectorLiteral(embedding);
 
-  const results = patientId
-    ? await sql`
-        select
-          n.id, n.patient_id, n.content, n.created_at,
-          p.name as patient_name,
-          1 - (n.embedding <=> ${vec}::vector) as similarity
-        from public.patient_notes n
-        join public.patients p on p.id = n.patient_id
-        where n.organization_id = ${profile.organizationId}
-          and n.patient_id = ${patientId}
-          and n.embedding is not null
-        order by n.embedding <=> ${vec}::vector
-        limit 20
-      `
-    : await sql`
-        select
-          n.id, n.patient_id, n.content, n.created_at,
-          p.name as patient_name,
-          1 - (n.embedding <=> ${vec}::vector) as similarity
-        from public.patient_notes n
-        join public.patients p on p.id = n.patient_id
-        where n.organization_id = ${profile.organizationId}
-          and n.embedding is not null
-        order by n.embedding <=> ${vec}::vector
-        limit 20
-      `;
+  const patientFilter = patientId
+    ? sql`and n.patient_id = ${patientId}`
+    : sql``;
+
+  if (filterOut?.trim()) {
+    const negEmbedding = await embedText(filterOut.trim());
+    const negVec = vectorLiteral(negEmbedding);
+
+    const results = await sql`
+      select
+        n.id, n.patient_id, n.content, n.created_at,
+        p.name as patient_name,
+        (1 - (n.embedding <=> ${vec}::vector))::float as similarity,
+        (1 - (n.embedding <=> ${negVec}::vector))::float as filtered_similarity
+      from public.patient_notes n
+      join public.patients p on p.id = n.patient_id
+      where n.organization_id = ${profile.organizationId}
+        ${patientFilter}
+        and n.embedding is not null
+      order by (n.embedding <=> ${negVec}::vector) - (n.embedding <=> ${vec}::vector) desc
+      limit 20
+    `;
+
+    return results.map((r) => ({
+      id: r.id,
+      patientId: r.patient_id,
+      patientName: r.patient_name,
+      content: r.content,
+      createdAt: r.created_at,
+      similarity: Number(r.similarity),
+      filteredSimilarity: Number(r.filtered_similarity),
+    }));
+  }
+
+  const results = await sql`
+    select
+      n.id, n.patient_id, n.content, n.created_at,
+      p.name as patient_name,
+      1 - (n.embedding <=> ${vec}::vector) as similarity
+    from public.patient_notes n
+    join public.patients p on p.id = n.patient_id
+    where n.organization_id = ${profile.organizationId}
+      ${patientFilter}
+      and n.embedding is not null
+    order by n.embedding <=> ${vec}::vector
+    limit 20
+  `;
 
   return results.map((r) => ({
     id: r.id,
@@ -97,6 +122,42 @@ export async function searchOrganizationNotes(query: string, patientId?: string)
     content: r.content,
     createdAt: r.created_at,
     similarity: Number(r.similarity),
+  }));
+}
+
+export async function keywordSearchOrganizationNotes(
+  keyword: string,
+  patientId?: string,
+) {
+  const { profile } = await requireOrganizationMember();
+
+  if (!keyword.trim()) return [];
+
+  const pattern = `%${keyword.trim()}%`;
+
+  const patientFilter = patientId
+    ? sql`and n.patient_id = ${patientId}`
+    : sql``;
+
+  const results = await sql`
+    select
+      n.id, n.patient_id, n.content, n.created_at,
+      p.name as patient_name
+    from public.patient_notes n
+    join public.patients p on p.id = n.patient_id
+    where n.organization_id = ${profile.organizationId}
+      ${patientFilter}
+      and n.content ilike ${pattern}
+    order by n.created_at desc
+    limit 20
+  `;
+
+  return results.map((r) => ({
+    id: r.id,
+    patientId: r.patient_id,
+    patientName: r.patient_name,
+    content: r.content,
+    createdAt: r.created_at,
   }));
 }
 
