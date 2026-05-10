@@ -9,12 +9,8 @@ Module-by-module log of Supabase capability work. One file per module from `SUPA
 | 3 | Auth | ✅ done | [`modules/03-auth.md`](modules/03-auth.md) |
 | 4 | Realtime | ✅ done | [`modules/04-realtime.md`](modules/04-realtime.md) |
 | 5 | pg_cron | ✅ done | [`modules/05-pg-cron.md`](modules/05-pg-cron.md) |
-| 6 | Storage | — | — |
-| 7 | Edge Functions | — | — |
-| 8 | pg_net | — | — |
-| 9 | Vault | — | — |
-| 10 | Database Webhooks | — | — |
-| 11 | Logs / audit | — | — |
+| 6–12 | Storage / Edge Functions / pg_net / Vault / Webhooks | (out of scope for this branch) | — |
+| 13 | Logs / audit | ✅ done | [`modules/13-logs-audit.md`](modules/13-logs-audit.md) |
 
 ## How to read these docs
 
