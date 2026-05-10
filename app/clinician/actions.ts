@@ -6,6 +6,16 @@ import { embedText, vectorLiteral } from "@/lib/llm/embed";
 
 const sql = postgres(process.env.DATABASE_URL!);
 
+export type Checkin = {
+  id: string;
+  patient_id: string;
+  patient_name: string;
+  checkin_type: "morning" | "evening";
+  symptom_category: string | null;
+  symptom_text: string;
+  created_at: string;
+};
+
 export type NoteResult = {
   id: number;
   category: string;
@@ -80,4 +90,19 @@ export async function searchNotes(
      order by (embedding <=> ${negLit}::vector) - (embedding <=> ${posLit}::vector) desc
      limit 10
   `;
+}
+
+/**
+ * Manually fire a morning or evening check-in. The same SQL function the
+ * cron jobs call — just so clinicians can demo the realtime flow without
+ * waiting until 8 AM / 8 PM.
+ */
+export async function triggerCheckin(
+  type: "morning" | "evening",
+): Promise<{ inserted: number }> {
+  await requireClinician();
+  const [{ generate_patient_checkins: inserted }] = await sql<
+    { generate_patient_checkins: number }[]
+  >`select public.generate_patient_checkins(${type})`;
+  return { inserted };
 }

@@ -1,5 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { SearchNotes } from "./search-notes";
+import { CheckinsFeed } from "./checkins-feed";
+import type { Checkin } from "./actions";
 
 export default async function ClinicianPage() {
   const supabase = await createClient();
@@ -26,27 +28,35 @@ export default async function ClinicianPage() {
     );
   }
 
+  const { data: initialCheckins } = await supabase
+    .from("patient_checkins")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(7);
+
   return (
-    <div className="mx-auto w-full max-w-3xl p-8">
-      <h1 className="text-2xl font-semibold">Patient notes</h1>
-      <p className="mt-1 text-sm text-zinc-500">
-        Signed in as <code>{user?.email}</code>
-      </p>
-      <p className="mt-4 text-sm text-zinc-500">
-        Search across patient symptom recordings by meaning, not exact words.
-        Type how you&apos;d describe what you&apos;re looking for — the search
-        understands synonyms and related concepts.
-      </p>
+    <div className="mx-auto w-full max-w-3xl space-y-12 p-8">
+      <header>
+        <h1 className="text-2xl font-semibold">Clinician dashboard</h1>
+        <p className="mt-1 text-sm text-zinc-500">
+          Signed in as <code>{user?.email}</code>
+        </p>
+      </header>
 
-      <div className="mt-8">
-        <SearchNotes />
-      </div>
+      <CheckinsFeed initial={(initialCheckins ?? []) as Checkin[]} />
 
-      <p className="mt-12 text-xs text-zinc-400">
-        Searching the demo corpus (1001 hospice symptom recordings). Once
-        Chris&apos;s patient/utterance schema lands, this same UI will search
-        real patient transcripts.
-      </p>
+      <section className="border-t pt-8">
+        <h2 className="text-lg font-medium">Search patient notes</h2>
+        <p className="mt-1 text-sm text-zinc-500">
+          Search across patient symptom recordings by meaning, not exact words.
+        </p>
+        <div className="mt-4">
+          <SearchNotes />
+        </div>
+        <p className="mt-8 text-xs text-zinc-400">
+          Searching the demo corpus (1001 hospice symptom recordings).
+        </p>
+      </section>
     </div>
   );
 }
