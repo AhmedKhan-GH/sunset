@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { searchOrganizationNotes } from "./actions";
+import { getOrganizationNotes, searchOrganizationNotes } from "./actions";
 import Link from "next/link";
 
 type Note = {
@@ -57,6 +57,12 @@ export function NotesSearch({
           patientId || undefined,
         );
         setSearchResults(results);
+      });
+    } else {
+      startSearch(async () => {
+        const filtered = await getOrganizationNotes(patientId || undefined);
+        setNotes(filtered);
+        setSearchResults(null);
       });
     }
   }
