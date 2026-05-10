@@ -32,7 +32,7 @@ const sql = postgres(process.env.DATABASE_URL!);
 
 // Disable stdout buffering — node buffers when piping. We want live progress.
 if (process.stdout.isTTY === false) {
-  // @ts-expect-error — _handle exists on tty/pipe streams
+  // @ts-ignore — _handle exists on tty/pipe streams
   if (process.stdout._handle?.setBlocking) process.stdout._handle.setBlocking(true);
 }
 

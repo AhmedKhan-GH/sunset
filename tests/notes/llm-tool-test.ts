@@ -10,20 +10,13 @@
  */
 import { generateText, stepCountIs } from "ai";
 import { ollama } from "@/lib/ai/ollama";
-import {
-  searchPatientNotesTool,
-  recentPatientNotesTool,
-  addPatientNoteTool,
-} from "@/lib/ai/tools/notes-tools";
+import { addPatientNoteTool } from "@/lib/ai/tools/notes-tools";
+import { searchNotesTool, recentNotesTool } from "@/lib/ai/tools/search-tools";
 import {
   findPatientByNameTool,
   listMyPatientsTool,
   getPatientDetailsTool,
 } from "@/lib/ai/tools/roster-tools";
-import {
-  searchOrgNotesTool,
-  recentOrgActivityTool,
-} from "@/lib/ai/tools/search-tools";
 
 const MODEL = process.env.OLLAMA_MODEL ?? "qwen2.5:0.5b";
 
@@ -42,7 +35,7 @@ const SCENARIOS: Scenario[] = [
   {
     name: "recent activity org-wide",
     prompt: "What's been happening with patients today?",
-    expectedTools: ["recentOrgActivity"],
+    expectedTools: ["recentNotes"],
   },
   {
     name: "list patients",
@@ -59,7 +52,7 @@ const SCENARIOS: Scenario[] = [
   {
     name: "semantic search org",
     prompt: "Which patients have been mentioning anxiety?",
-    expectedTools: ["searchOrgNotes", "findPatientByName"],
+    expectedTools: ["searchNotes", "findPatientByName"],
   },
 ];
 
@@ -74,14 +67,12 @@ async function runScenario(s: Scenario) {
       "questions. Tools may return errors which you should relay rather than retry.",
     prompt: s.prompt,
     tools: {
-      searchPatientNotes: searchPatientNotesTool,
-      recentPatientNotes: recentPatientNotesTool,
+      searchNotes: searchNotesTool,
+      recentNotes: recentNotesTool,
       addPatientNote: addPatientNoteTool,
       findPatientByName: findPatientByNameTool,
       listMyPatients: listMyPatientsTool,
       getPatientDetails: getPatientDetailsTool,
-      searchOrgNotes: searchOrgNotesTool,
-      recentOrgActivity: recentOrgActivityTool,
     },
     stopWhen: stepCountIs(4),
   });

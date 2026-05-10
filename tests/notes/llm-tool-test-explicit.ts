@@ -6,15 +6,12 @@
  */
 import { generateText, stepCountIs } from "ai";
 import { ollama } from "@/lib/ai/ollama";
-import {
-  searchPatientNotesTool,
-  recentPatientNotesTool,
-} from "@/lib/ai/tools/notes-tools";
+import { addPatientNoteTool } from "@/lib/ai/tools/notes-tools";
+import { searchNotesTool, recentNotesTool } from "@/lib/ai/tools/search-tools";
 import {
   findPatientByNameTool,
   listMyPatientsTool,
 } from "@/lib/ai/tools/roster-tools";
-import { recentOrgActivityTool } from "@/lib/ai/tools/search-tools";
 
 const MODEL = process.env.OLLAMA_MODEL ?? "llama3.2:1b";
 
@@ -30,9 +27,9 @@ const SCENARIOS = [
     expected: "listMyPatients",
   },
   {
-    name: "explicit recentOrgActivity",
-    prompt: "Call the recentOrgActivity tool with limit=5.",
-    expected: "recentOrgActivity",
+    name: "explicit recentNotes",
+    prompt: "Call the recentNotes tool with limit=5.",
+    expected: "recentNotes",
   },
 ];
 
@@ -49,9 +46,9 @@ async function main() {
       tools: {
         findPatientByName: findPatientByNameTool,
         listMyPatients: listMyPatientsTool,
-        recentPatientNotes: recentPatientNotesTool,
-        searchPatientNotes: searchPatientNotesTool,
-        recentOrgActivity: recentOrgActivityTool,
+        searchNotes: searchNotesTool,
+        recentNotes: recentNotesTool,
+        addPatientNote: addPatientNoteTool,
       },
       stopWhen: stepCountIs(2),
     });
