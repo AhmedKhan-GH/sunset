@@ -40,6 +40,9 @@ export default async function PatientLayout({
             <Link href="/patient" className="hover:underline">
               Home
             </Link>
+            <Link href="/patient/notes" className="hover:underline">
+              Notes
+            </Link>
             <Link href="/patient/chat" className="hover:underline">
               Chat
             </Link>
