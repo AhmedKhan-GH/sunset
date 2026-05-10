@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { SearchNotes } from "./search-notes";
 
 export default async function ClinicianPage() {
   const supabase = await createClient();
@@ -7,11 +8,6 @@ export default async function ClinicianPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Visibility through the user-scoped client = RLS-filtered.
-  const { data: visibleOrgs } = await supabase.from("organizations").select("*");
-  const { data: visibleProfiles } = await supabase.from("profiles").select("*");
-
-  // Get this user's role (own row only — RLS allows it)
   const { data: ownProfile } = await supabase
     .from("profiles")
     .select("role")
@@ -31,29 +27,25 @@ export default async function ClinicianPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-2xl p-8">
-      <h1 className="text-2xl font-semibold">Hi, clinician 👩‍⚕️</h1>
+    <div className="mx-auto w-full max-w-3xl p-8">
+      <h1 className="text-2xl font-semibold">Patient notes</h1>
       <p className="mt-1 text-sm text-zinc-500">
-        Signed in as <code>{user?.email}</code> · role <code>{ownProfile.role}</code>
+        Signed in as <code>{user?.email}</code>
+      </p>
+      <p className="mt-4 text-sm text-zinc-500">
+        Search across patient symptom recordings by meaning, not exact words.
+        Type how you&apos;d describe what you&apos;re looking for — the search
+        understands synonyms and related concepts.
       </p>
 
-      <h2 className="mt-8 text-lg font-medium">What you can see (RLS-filtered)</h2>
-      <ul className="mt-3 space-y-2 text-sm">
-        <li>
-          <strong>Organizations visible:</strong> {visibleOrgs?.length ?? 0}{" "}
-          <span className="text-zinc-400">
-            (expected 0 — only platform_admin can read)
-          </span>
-        </li>
-        <li>
-          <strong>Profiles visible:</strong> {visibleProfiles?.length ?? 0}{" "}
-          <span className="text-zinc-400">(expected 1 — only your own)</span>
-        </li>
-      </ul>
+      <div className="mt-8">
+        <SearchNotes />
+      </div>
 
-      <p className="mt-8 text-xs text-zinc-400">
-        Placeholder page. The real clinician dashboard (patient list, RAG search,
-        etc.) goes here when Micah/Ahmed build it.
+      <p className="mt-12 text-xs text-zinc-400">
+        Searching the demo corpus (1001 hospice symptom recordings). Once
+        Chris&apos;s patient/utterance schema lands, this same UI will search
+        real patient transcripts.
       </p>
     </div>
   );
