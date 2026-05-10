@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { db } from "@/lib/db";
 import { profiles, practitioners, patients, relatives, organizations } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 
@@ -198,4 +198,21 @@ export async function createRelative(patientId: string, formData: FormData) {
   });
 
   revalidatePath(`/organization/patients/${patientId}`);
+}
+
+export async function updateSystemPrompt(formData: FormData) {
+  const profile = await requireOrganizationAdmin();
+
+  const systemPrompt = formData.get("systemPrompt");
+  const value = typeof systemPrompt === "string" ? systemPrompt.trim() || null : null;
+
+  await db
+    .update(organizations)
+    .set({
+      systemPrompt: value,
+      updatedAt: sql`extract(epoch from now())::integer`,
+    })
+    .where(eq(organizations.id, profile.organizationId));
+
+  revalidatePath("/organization/settings");
 }

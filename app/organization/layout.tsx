@@ -66,6 +66,11 @@ export default async function OrganizationLayout({
             <NavLink href="/organization/chat">
               Chat
             </NavLink>
+            {isOrganizationAdmin && (
+              <NavLink href="/organization/settings">
+                Settings
+              </NavLink>
+            )}
           </nav>
         </div>
         <div className="flex items-center gap-4 text-sm">
