@@ -40,6 +40,9 @@ export default async function RelativeLayout({
             <Link href="/relative" className="hover:underline">
               Home
             </Link>
+            <Link href="/relative/notes" className="hover:underline">
+              Notes
+            </Link>
             <Link href="/relative/chat" className="hover:underline">
               Chat
             </Link>
